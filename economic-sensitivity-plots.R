@@ -1,6 +1,8 @@
 source('constants.R')
 library(abind)
 
+dir.create('figures-2024-04-16/')
+
 N = 103
 
 eConstants = list(
@@ -246,156 +248,6 @@ row.names<-c(
     'Boosting, p = 0.04 / day',
     'Vax + Boosting, p = 0.02/day'
 )[limited_runs_index]
-
-
-
-sensitivity_fn = function(
-    folder_name,
-    unique_id,
-    community_transmission,
-    work_R0,
-    dormitory_R0,
-    E0,
-    initial_recovered,
-    initial_V2,
-    n_sims
-) {
-    folder_name; unique_id; community_transmission; work_R0; dormitory_R0; E0; initial_recovered; initial_V2; n_sims
-    rds_filename = function(prepended_key, index_i) {
-        work_id_multiplier = ifelse(index_i == 4,
-            'x(1-0.4)',
-            ''
-        )
-        testing_string = ifelse(index_i == 2,
-            ',T.test-38',
-            ifelse(index_i == 3,
-                ',v.test-0.3-rational',
-                ''
-            )
-        )
-        vax_string = ifelse(index_i == 5,
-            ',vax-rate0.02',
-            ''
-        )
-        initial_recovered_string = ifelse(initial_recovered > 0,
-            paste0(',initial_recovered-', initial_recovered),
-            ''
-        )
-        initial_V2_string = ifelse(initial_V2 > 0,
-            paste0(',initial_V2-', initial_V2),
-            ''
-        )
-        paste0(
-            folder_name, '/', unique_id,
-            prepended_key,
-            '_community-', community_transmission,
-            ',work_R0-', work_R0,
-            work_id_multiplier,
-            ',dormitory_R0-', dormitory_R0,
-            ',E0-', E0,
-            vax_string,
-            testing_string,
-            initial_recovered_string,
-            initial_V2_string,
-            ',n_sims-', n_sims,
-            'index_i-', index_i,
-            '_full-output.rds'
-        )
-    }
-
-    make_batch = function(d, key) {
-        d; key
-        prepended_key = ifelse(key == '',
-            '',
-            paste0('-', key)
-        )
-        for(i in 1:5) {
-            d[[paste0(i, key)]] = readRDS(rds_filename(prepended_key, i))
-        }
-        d
-    }
-    d = make_batch(list(), '')
-    get_real_multiplier = function(sensitivity_variable,
-                                   theoretical_multiplier) {
-        kConstants_ = kConstants
-        kConstants_[[sensitivity_variable]] = theoretical_multiplier * kConstants_[[sensitivity_variable]]
-        ccl = check_consistency(kConstants_, altered_single_parameter = sensitivity_variable)
-        kConstants_fixed = get('fixed_constants', ccl)
-        if(!get('consistent', ccl) && !get('fixed', ccl)) {
-            stop('Unfixable constants')
-        }
-        get(sensitivity_variable, kConstants_fixed) / get(sensitivity_variable, kConstants)
-    }
-
-    sensitivity_multipliers = c(0.5, 1, 1.5)
-
-    for(sensitivity_variable in names(kConstants)) {
-        real_multipliers = sapply(sensitivity_multipliers, function(m) get_real_multiplier(sensitivity_variable, m))
-        for(sensitivity_multiplier in real_multipliers) {
-            if(sensitivity_multiplier != 1) {
-                key = paste0(sensitivity_variable, '-', sensitivity_multiplier)
-                d = make_batch(d, key)
-            }
-        }
-    }
-#d_test <<- d
-    make_paneled_plot = function(filename, outcome_fn, ylab) {
-        si = lapply(d, outcome_fn)
-        si_mean_max = max(sapply(si, mean)) 
-        si_mean_min = min(sapply(si, mean))
-
-        png(filename, height = 200*5, width = 200*7)
-        layout(matrix(c(1:29, 34, 30:34), ncol = 7))
-
-        for(sensitivity_variable in names(kConstants)) {
-            real_multipliers = sapply(
-                sensitivity_multipliers,
-                function(m) get_real_multiplier(sensitivity_variable, m)
-            )
-
-            for(i in 1:5) {
-                keys = sapply(
-                    real_multipliers,
-                    function(m) {
-                        ifelse(m == 1,
-                            paste0(i),
-                            paste0(i, sensitivity_variable, '-', m)
-                        )
-                    }
-                )
-
-                values = sapply(keys, function(s) mean(si[[s]]))
-
-                if(i == 1) {
-                    plot(
-                        real_multipliers,
-                        values,
-                        ylim = c(0, si_mean_max),
-                        xlim = c(0.5, 1.5),
-                        xlab = paste0(sensitivity_variable, ' (multiplier)'),
-                        ylab = ylab,
-                        type = 'b',
-                        lwd = 4
-                    )
-                } else {
-                    points(
-                        real_multipliers,
-                        values,
-                        type = 'b',
-                        col = colors[i],
-                        lwd = 4
-                    )
-                }
-            }
-        }
-        plot(NULL, xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-        legend("bottom", row.names, lwd = 4, col = colors)
-        dev.off()
-
-    }
-    make_paneled_plot('figures-2023-10-07/farmlike-facility-betterer-sensitivity-plots-si.png', symptomatic_infections, 'Mean total symptomatic infections')
-    make_paneled_plot('figures-2023-10-07/farmlike-facility-betterer-sensitivity-plots-su.png', shiftwise_unavailable, 'Mean total shifts unavailable')
-}
 
 
 rds_filename = function(
@@ -789,203 +641,6 @@ make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
     list(gd = greatest_differences, gdim = greatest_difference_indices_matrix)
 }
 
-make_one_parameter_paneled_plots = function(filename, outcome_name, ylab, dd, kConstants,
-                             sensitivity_multipliers, max_j,
-                             csv_filename, unique_ids, linear = FALSE) {
-    filename; outcome_name; ylab; dd; kConstants; sensitivity_multipliers; max_j; csv_filename; unique_ids
-    #print('F')
-    #png(filename, height = 200*4, width = 200*4)
-    #layout(matrix(c(1:29, 34, 30:34), ncol = 7))
-
-    #figuring out bounds:
-    greatest_positive_difference = 0
-    greatest_negative_difference = 0
-    variables_to_exclude = list()
-    values_df = data.frame(parameter_set = character(), sensitivity_variable = character(), multiplier = numeric(), intervention = character(), value = numeric()) 
-    cat('\n\n', filename, linear, '\n')
-    for(sensitivity_variable in names(kConstants)) {
-        #print('L1')
-        real_multipliers = sapply(
-            sensitivity_multipliers,
-            function(m) get_real_multiplier(sensitivity_variable, m, kConstants)
-        )
-
-        for(i in 1:5) {
-            #print('L1+')
-            intervention = row.names[i]
-            null_value = dd[[1]][[paste0(i)]][[outcome_name]]
-            keys = sapply(
-                real_multipliers,
-                function(m) {
-                    ifelse(m == 1,
-                        paste0(i),
-                        paste0(i, sensitivity_variable, '-', m)
-                    )
-                }
-            )
-            for(j in 1:max_j) {
-                #print('L1++')
-                values = sapply(keys, function(key) dd[[j]][[key]][[outcome_name]])
-                for(multiplier in real_multipliers) {
-                    if(multiplier == 1) {
-                        key = paste0(i)
-                    } else {
-                        key = paste0(i, sensitivity_variable, '-', multiplier)
-                    }
-                    value = dd[[j]][[key]][[outcome_name]]
-                    values_df = rbind(values_df, data.frame(parameter_set = unique_ids[j], sensitivity_variable = sensitivity_variable, multiplier = multiplier, intervention = intervention, value = value))
-                }
-                if(linear) {
-                    this_greatest_positive_difference = max(values, na.rm = TRUE)
-                    this_greatest_negative_difference = min(values, na.rm = TRUE)
-                } else {
-                    this_greatest_positive_difference = max(0, log(values[3] / values[2]), log(values[1] / values[2]), na.rm = TRUE)
-                    this_greatest_negative_difference = min(0, log(values[3] / values[2]), log(values[1] / values[2]), na.rm = TRUE)
-                }
-                if(this_greatest_positive_difference >= greatest_positive_difference) {
-                    if(this_greatest_positive_difference == Inf) {
-                        #cat('\nPositive Infinite:\n', sensitivity_variable, '\n', i, '\n', j, '\n', values, '\n\n')
-                        #variables_to_exclude = c(variables_to_exclude, sensitivity_variable)
-                    } else {
-                        greatest_positive_difference = this_greatest_positive_difference
-                    }
-                }
-                if(this_greatest_negative_difference <= greatest_negative_difference) {
-                    if(this_greatest_negative_difference == Inf) {
-                        #cat('\nNegative Infinite:\n', sensitivity_variable, '\n', i, '\n', j, '\n', values, '\n\n')
-                        #variables_to_exclude = c(variables_to_exclude, sensitivity_variable)
-                    } else {
-                        greatest_negative_difference = this_greatest_negative_difference
-                    }
-                }
-            }
-        }
-    }
-    #write.csv(values_df, csv_filename)
-
-
-    greatest_differences = c()
-    #greatest_difference_indices_matrix = c()
-
-    #actually doing it
-    #for(sensitivity_variable in names(kConstants)) {
-    #print(variables_to_exclude)
-    for(sensitivity_index in 1:length(kConstants)) {
-        sensitivity_variable = names(kConstants)[sensitivity_index]
-        png(paste0(filename,'-', sensitivity_variable), height = 200*4, width = 200*6)
-        layout(matrix(c(1:4), ncol = 2))
-
-        real_multipliers = sapply(
-            sensitivity_multipliers,
-            function(m) get_real_multiplier(sensitivity_variable, m, kConstants)
-        )
-        
-        greatest_difference_all_5 = 0
-        #greatest_difference_indices = rep(0, 5)
-
-        #for(j in 1:max_j) {
-        #changed order to reuse existing .RDS while making visual comparison a little easier
-        for(j in 1:4) {
-            FAIL_FLAG = FALSE
-            #print('L2+')
-            for(i in 1:5) {
-                #print('L2++')
-            #greatest_difference = 0
-            #gd_j = NULL
-            #for(j in 1:max_j) {
-                keys = sapply(
-                    real_multipliers,
-                    function(m) {
-                        ifelse(m == 1,
-                            paste0(i),
-                            paste0(i, sensitivity_variable, '-', m)
-                        )
-                    }
-                )
-                values = sapply(keys, function(key) dd[[j]][[key]][[outcome_name]])
-                null_value = dd[[j]][[paste0(i)]][[outcome_name]]
-                if(linear) {
-                    difference_function = function(value, value_) {
-                        abs(value - value_)
-                    }
-                } else {
-                    difference_function = function(value, value_) {
-                        abs(log(value) - log(value_))
-                    }
-                }
-                this_greatest_difference = max(sapply(
-                    values,
-                    function(value) {
-                        max(0,
-                            sapply(
-                                values,
-                                function(value_) difference_function(value, value_)
-                            ),
-                            na.rm = TRUE
-                        )
-                    }
-                ))
-                if(this_greatest_difference >= greatest_difference_all_5) {
-                    greatest_difference_all_5 = this_greatest_difference
-                    #null_value = dd[[j]][[paste0(i)]][[outcome_name]]
-                }
-                if(greatest_negative_difference == greatest_positive_difference ||
-                   greatest_negative_difference == -Inf ||
-                   greatest_positive_difference == Inf) {
-                        if(i == 1) {
-                            plot(NULL, xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-                            print(paste0(sensitivity_variable, 'has failed in panel:', j))
-                        } else if(!FAIL_FLAG) {
-                            print(paste0(sensitivity_variable, 'has failed late in panel:', j, ':', i))
-                        }
-                    FAIL_FLAG = TRUE
-                    #stop('FAILURE.')
-                } else {
-                    if(linear) {
-                        plotting_values = values
-                    } else if(null_value == 0) {
-                        plotting_values = sign(values) * 10 * (greatest_positive_difference - greatest_negative_difference)
-                    } else {
-                        plotting_values = log(values) - log(null_value)
-                    }
-                    if(i == 1) {
-                        plot(
-                            real_multipliers,
-                            #log(values) - log(null_value),
-                            plotting_values,
-                            ylim = c(greatest_negative_difference, greatest_positive_difference),
-                            xlim = c(0.5, 1.5),
-                            xlab = paste0(sensitivity_variable, ' (multiplier)'),
-                            ylab = ylab,
-                            type = 'b',
-                            lwd = 4
-                        )
-                        title(unique_ids[j])
-                    } else {
-                        points(
-                            real_multipliers,
-                            plotting_values,
-                            type = 'b',
-                            col = colors[i],
-                            lwd = 4
-                        )
-                    }
-                }
-            }
-            FAIL_FLAG = FALSE
-        }
-        greatest_differences = c(greatest_differences, greatest_difference_all_5)
-        #greatest_difference_indices_matrix = rbind(greatest_difference_indices_matrix, greatest_difference_indices)
-        #plot(NULL, xaxt='n',yaxt='n',bty='n',ylab='',xlab='', xlim=0:1, ylim=0:1)
-        #legend("bottom", row.names, lwd = 4, col = colors)
-        dev.off()
-        print(paste0(sensitivity_variable, ':', greatest_difference_all_5))
-    }
-    print('PLOT COMPLETE')
-    list(gd = greatest_differences)
-}
-
-
 
 panelwise_interesting_sensitivity_fn = function(
     folder_name,
@@ -1019,17 +674,17 @@ panelwise_interesting_sensitivity_fn = function(
                      output_per_shifts, hourly_wages, eConstants)
     }
     #dd <<- dd
-    l_si = make_paneled_plot('figures-2023-10-07/shared-summary-sensitivity-plots-si.png',
+    l_si = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-si.png',
                              'symptomatic_infections',
                              'Symptomatic infections (multiplier)', dd,
                              kConstants, sensitivity_multipliers, max_j,
-                             'figures-2023-10-07/shared-sensitivity-symptomatic-infections.csv', ######
+                             'figures-2024-04-16/shared-sensitivity-symptomatic-infections.csv', ######
                              unique_ids) ######
-    l_su = make_paneled_plot('figures-2023-10-07/shared-summary-sensitivity-plots-su.png',
+    l_su = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-su.png',
                              'shifts_unavailable', 
                              'Shifts unavailable (multiplier)', dd,
                              kConstants, sensitivity_multipliers, max_j,
-                             'figures-2023-10-07/shared-sensitivity-shifts-unavailable.csv', ######
+                             'figures-2024-04-16/shared-sensitivity-shifts-unavailable.csv', ######
                              unique_ids) ######
 #    l_tc = make_one_parameter_paneled_plots('v16-summary-sensitivity-plots-tc.png',
 #                             'total_cost',
@@ -1037,11 +692,11 @@ panelwise_interesting_sensitivity_fn = function(
 #                             kConstants, sensitivity_multipliers, max_j,
 #                             'v16-sensitivity-total-cost.csv', ######
 #                             unique_ids) ######
-    l_tc = make_paneled_plot('figures-2023-10-07/summary-sensitivity-plots-tc.png',
+    l_tc = make_paneled_plot('figures-2024-04-16/summary-sensitivity-plots-tc.png',
                              'total_cost',
                              'Total cost (multiplier)', dd,
                              kConstants, sensitivity_multipliers, max_j,
-                            'figures-2023-10-07/sensitivity-total-cost.csv', ######
+                            'figures-2024-04-16/sensitivity-total-cost.csv', ######
                              unique_ids) ######
 
 
@@ -1082,11 +737,11 @@ panelwise_r_eff_sensitivity_fn = function(
                      output_per_shifts, hourly_wages, eConstants)
     }
     #dd <<- dd
-    l_r_eff = make_paneled_plot('figures-2023-10-07/shared-summary-sensitivity-plots-r_eff.png',
+    l_r_eff = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-r_eff--90-days.png',
                              'r_eff',
                              'Effective reproduction number (internal)', dd,
                              kConstants, sensitivity_multipliers, max_j,
-                             'figures-2023-10-07/shared-sensitivity-r_eff.csv', ######
+                             'figures-2024-04-16/shared-sensitivity-r_eff--90-days.csv', ######
                              unique_ids) ######
 
     #list(gd_tc = l_tc$gd, gdim_tc = l_tc$gdim, dd = dd)
@@ -1438,11 +1093,11 @@ pi_economic_sensitivity_fn = function(
     }
     #dd <<- dd
     #return here
-    l_tc = make_paneled_economic_plot('figures-2023-10-07/summary-sensitivity-plots-economic-tc.png',
+    l_tc = make_paneled_economic_plot('figures-2024-04-16/summary-sensitivity-plots-economic-tc.png',
                              'total_cost',
                              'Total cost (multiplier)', dd,
                              eConstants, sensitivity_multipliers, max_j,
-                             'v14-sensitivity-economic-only-parameters-total-cost.csv', ######
+                             'figures-2024-04-16/sensitivity-economic-only-parameters-total-cost.csv', ######
                              unique_ids) ######
 
     list(gd_tc = l_tc$gd, gdim_tc = l_tc$gdim, dd = dd)
@@ -1486,7 +1141,7 @@ production_shifts_mask_fn = function(start_days) {
 }
 
 #start_days = readRDS(paste0(fragments[1], '/start_days--', fragments[2]))
-start_days = readRDS('bobrovitz-test--sensitivity--safer/start_days--farmlike-facility_community-0,work_R0-6,dormitory_R0-2,E0-1,initial_recovered-71,initial_V2-73,n_sims-100index_i-1_full-output.rds')
+start_days = readRDS('H_R_V2-check--sensitivity/start_days--farmlike-facility_community-0,work_R0-6,dormitory_R0-2,E0-1,initial_recovered-71,initial_V2-73,n_sims-100index_i-1_full-output.rds')
 
 masks = list(production_shifts_mask_fn(start_days)) #note that this is now a list of 270 x 100 matrices, not 
 #masks = list(facility_production_mask)#rep(list(farm_production_mask, facility_production_mask), 8)
@@ -1504,7 +1159,7 @@ hourly_wages = rep(16.57, 4)
 #eConstants
 
 l = panelwise_interesting_sensitivity_fn(
-    'bobrovitz-test--sensitivity--safer',
+    'H_R_V2-check--sensitivity',
     c('farmlike-facility'#,
       # 'facility-no-vax',
       # 'facility-no-recovered',
@@ -1538,8 +1193,9 @@ l = panelwise_interesting_sensitivity_fn(
 #print(names(kConstants)[v >= cutoff])
 
 dd = l$dd
-dir.create('figures-2023-10-07/')
-saveRDS(dd, 'figures-2023-10-07/saved_dd.RDS')
+dir.create('figures-2024-04-16/')
+saveRDS(dd, 'figures-2024-04-16/saved_dd.RDS')
+
 
 discordant = which(
     names(dd[[1]])[6:485] != c(
@@ -1737,7 +1393,7 @@ cat(sapply(1:5, function(i) paste0(dd_old[[1]][[i]][['shifts_unavailable']], '\t
 #okay, so nothing surprising here . . .
 
 l_r_eff = panelwise_r_eff_sensitivity_fn(
-    'bobrovitz-test--sensitivity-r0s--safer',
+    'H_R_V2-check--sensitivity-r0s--90-days',
     c('farmlike-facility'#,
       # 'facility-no-vax',
       # 'facility-no-recovered',
@@ -1769,7 +1425,7 @@ l_r_eff = panelwise_r_eff_sensitivity_fn(
 #print(names(kConstants)[v >= cutoff])
 
 dd_l = l_r_eff$dd
-saveRDS(dd_l, 'figures-2023-10-07/saved_dd-r_eff.RDS')
+saveRDS(dd_l, 'figures-2024-04-16/saved_dd-r_eff--90-days.RDS')
 
 "cat(sapply(1:5, function(i) paste0(dd_l[[1]][[i]][['r_eff']], '\t', dd_l[[1]][[generate_name(i, 'V2_decay_rate', 0.5)]][['r_eff']], '\t', dd_l[[1]][[generate_name(i, 'V2_decay_rate', 1.5)]][['r_eff']])), sep='\n')
 #2.75    1.88    2.59
@@ -1906,7 +1562,7 @@ custom_linear_panel = function(outcome_name, ylab, dd, kConstants,
     }
 }
 
-png('figures-2023-10-07/master-summary.png', height = 200*5, width = 200*4)
+png('figures-2024-04-16/master-summary--90-days.png', height = 200*5, width = 200*4)
 #layout(matrix(1:45, ncol = 5, byrow = TRUE))
 #layout(matrix(1:44, ncol = 4, byrow = TRUE))
 layout(matrix(1:20, ncol = 4, byrow = TRUE))
