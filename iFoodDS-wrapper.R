@@ -258,7 +258,7 @@ full_run = function(
 
 FIXED_SEED = TRUE
 VERSION = '3.0'
-double_wrap_num_sims = 1000
+double_wrap_num_sims = 100
 
 #separating into one variable per line for comments and diffing
 #here using all variable names explicitly, so that errors fail loudly instead of
@@ -276,7 +276,7 @@ common_parameters = list(
     n_no_symptoms = '1',                        #i.e., exposed 
     n_mild = '0',
     working_directory = '.',
-    folder_name = 'H_R_V2-check',   # relative to working directory
+    folder_name = 'H_R_V2-check--sensitivity',   # relative to working directory
     analyze_only = FALSE,
     PARALLEL = TRUE,
     #fraction_recovered = 0.69,
@@ -334,7 +334,7 @@ for(housing in c('shared', 'individual')) {
     }
 }
 
-for(i in (1:8)) {
+"for(i in (1:8)) {
     print(paste0('Starting: ', i))
     housing = df[i, 'housing']
     setting = df[i, 'setting']
@@ -386,9 +386,8 @@ for(i in (1:8)) {
         )
     )
     do.call(full_run, all_params)
-}
+}"
 
-stop('Scenario now, not sensitivity.')
 
 run_67 = function(common_parameters, additional_facility_parameters,
                   additional_farm_parameters, kConstants, farm_or_facility,

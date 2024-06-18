@@ -1,10 +1,6 @@
 source('constants.R')
 library(abind)
 
-#TBD: FIX THIS
-#facility
-#output_per_week = 784346.67
-#farm
 N = 103
 
 eConstants = list(
@@ -28,7 +24,7 @@ eConstants = list(
 
 #NB: This will only work if the data has new_internal_infections, and will only
 #be *right* if the destination of transmission has been changed from E to R, as
-#in branch r0-testing
+#in branch sensitivity-r0
 r_eff = function(df, mask, limited_i, output_per_shift, hourly_wage, eConstants) {
     df; mask; limited_i; output_per_shift; hourly_wage; eConstants
     apply(df[,'new_internal_infections',], 2, sum)
@@ -73,11 +69,7 @@ shiftwise_production_loss = function(df, mask,
     #df = df[mask,,]
     runs = dim(mask)[2]
     df = abind(sapply(1:runs, function(run) df[mask[,run],, run][1:128,], simplify = FALSE), along = 3)
-    #kludged as hell
-    #TBD: fix
-    #df = tryCatch(abind(sapply(1:runs, function(run) df[mask[,run],, run], simplify = FALSE), along = 0),
-    #              error = function(e) browser())
-    #print(dimnames(df))
+
     fraction_available = 1 - shiftwise_unavailable_fraction(df)
     #print(mean(fraction_available))
     #print(eConstants$threshold)
@@ -94,7 +86,6 @@ shiftwise_production_loss = function(df, mask,
 
 limited_runs_index = c(1,2,4,9,13)
 
-#TBD: FIX INCORRECT calculation of (potentially negative!) compensation
 
 temperature_screening_cost = function(data,
     mask,
@@ -406,7 +397,6 @@ sensitivity_fn = function(
     make_paneled_plot('figures-2023-10-07/farmlike-facility-betterer-sensitivity-plots-su.png', shiftwise_unavailable, 'Mean total shifts unavailable')
 }
 
-#sensitivity_fn('sensitivity-2022-10-29', 'farmlike-facility-pass-6', 0, 6, 2, 1, 71, 73, 100)
 
 rds_filename = function(
     prepended_key, index_i, index_j,
@@ -597,8 +587,6 @@ make_dd = function(
     dd
 }
 
-#select = function(..., selection_mode) {
-#}
 
 make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                              sensitivity_multipliers, max_j,
@@ -769,23 +757,6 @@ make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                     } else {
                         log_differences = log(values) - log(null_value)
                     }
-                    #KLUDGE TIME!
-                    #to_print = FALSE
-                    #if(any(log_differences %in% c(-Inf, Inf))) {
-                    #    to_print = TRUE
-                    #    cat(sensitivity_variable, ': 1\n\t', log_differences, '\n', sep = '')
-                    #}
-                    #log_differences = ifelse(log_differences == Inf,
-                    #   10 * (greatest_positive_difference - greatest_negative_difference),
-                    #   ifelse(log_differences == -Inf,
-                    #       -10 * (greatest_positive_difference - greatest_negative_difference),
-                    #       log_differences
-                    #   )
-                    #)
-                    #if(to_print) {
-                    #    cat('\t', log_differences, '\n', sep = '')
-                    #}
-                    #END KLUDGE TIME
                     plot(
                         real_multipliers,
                         #log(values) - log(null_value),
@@ -1325,7 +1296,7 @@ make_economic_batch = function(d, keys, index_j,
     initial_V2s,
     n_sims,
     summary_names,
-    summary_fns, #CONTINUE HERE
+    summary_fns, 
     masks,
     output_per_shifts,
     hourly_wages,
@@ -1553,7 +1524,7 @@ l = panelwise_interesting_sensitivity_fn(
     c(73#, 0, 73, 0
       ),
     100,
-    dd = readRDS('figures-2023-07-07/saved_dd.RDS'),#('saved_dd_17-farmlike.RDS'),#NULL,
+    dd = NULL,
     c('symptomatic_infections', 'shifts_unavailable', 'total_cost'),
     c(mean_fn(symptomatic_infections),
       mean_fn(shiftwise_unavailable),
@@ -1567,6 +1538,7 @@ l = panelwise_interesting_sensitivity_fn(
 #print(names(kConstants)[v >= cutoff])
 
 dd = l$dd
+dir.create('figures-2023-10-07/')
 saveRDS(dd, 'figures-2023-10-07/saved_dd.RDS')
 
 discordant = which(
@@ -1785,7 +1757,7 @@ l_r_eff = panelwise_r_eff_sensitivity_fn(
     c(73#, 0, 73, 0
       ),
     100,
-    dd = readRDS('figures-2023-07-07/saved_dd-r_eff.RDS'),#NULL, #readRDS('saved_dd_14.RDS'),#NULL,
+    dd = NULL,
     c('r_eff'),
     c(mean_fn(r_eff)),
     masks,
