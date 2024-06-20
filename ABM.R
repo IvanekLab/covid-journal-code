@@ -255,10 +255,15 @@ progress_infection = function(agents, N, start_time, end_time, symptom_protectio
     agents$infection_status[IP_to_IM] = 'IM'
     agents$time_IM[IP_to_IM] = agents$time_IP[IP_to_IM] +
         agents$duration_IP[IP_to_IM]
-    agents$time_isolated[IP_to_IM & isolated_0] =
-        agents$time_IM[IP_to_IM & isolated_0] #resetting isolation duration upon
+    #agents$time_isolated[IP_to_IM & isolated_0] =
+    #    agents$time_IM[IP_to_IM & isolated_0] #resetting isolation duration upon
                                               #symptom onset
     agents$infection_status[xE_to_IP] = 'IP'
+    self_isolating = IP_to_IM & rbinom(N, 1, .25)
+    new_self_isolations = sum(self_isolating)
+    agents$isolated[self_isolating] = TRUE
+    agents$time_isolated[self_isolating] = end_time
+    #Earlier validation says: "TBD: figure out isolation"
 
     IA_to_R =  (agents$infection_status == 'IA' &
                 end_time - agents$time_IA > agents$duration_IA
@@ -322,7 +327,7 @@ progress_infection = function(agents, N, start_time, end_time, symptom_protectio
     }
     agents$infection_status[x_to_R] = 'NI'
 
-    list(agents = agents, IP_to_IM = IP_to_IM, IM_to_IS, new_previously_unisolated_hospitalizations = new_previously_unisolated_hospitalizations)
+    list(agents = agents, IP_to_IM = IP_to_IM, IM_to_IS, new_previously_unisolated_hospitalizations = new_previously_unisolated_hospitalizations, new_self_isolations = new_self_isolations)
 }
 
 ABM <- function(agents, contacts_list, lambda_list, schedule,
@@ -368,6 +373,7 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
     #Creating initial conditions
     end_time = 0 # End of the last shift before simulation starts
     fractional_test_carried = 0
+    cumulative_self_isolations = 0
     initial_infecteds = (agents$infection_status != 'NI')
     ii_remaining = sum(initial_infecteds)
 
@@ -448,8 +454,21 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
             !isolated_0 
         )
         agents$infection_status[NI_to_E_community] = 'E'
-        agents$time_E[NI_to_E_community] = potential_times_E[NI_to_E_community]        
-
+        agents$time_E[NI_to_E_community] = potential_times_E[NI_to_E_community]
+        #WAS, in previous r_eff tests:
+#        agents$immune_status[NI_to_E_community] = ifelse(agents$vax_status[NI_to_E_community] %in% c('NV', 'R'),
+#            'R',
+#            ifelse(agents$vax_status[NI_to_E_community] %in% c('V1', 'V2', 'B'),
+#                paste0('H_', agents$vax_status[NI_to_E_community], '_R'),
+#                'NA'
+#            )
+#        )
+#        agents$previous_immunity[NI_to_E_community] = immunity_0[NI_to_E_community]
+        #NOW
+#        agents = update_immunity(agents, NI_to_E_community, 'R',
+#                                 potential_times_E,
+#                                 complete_immunity_duration_R,
+#                                 net_protection, infection_protection)
 
         NI_to_E = (
             agents$infection_status == 'NI' &
@@ -458,6 +477,20 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
         )
         agents$infection_status[NI_to_E] = 'E'
         agents$time_E[NI_to_E] = potential_times_E[NI_to_E]
+        #WAS
+#        agents$immune_status[NI_to_E] = ifelse(agents$vax_status[NI_to_E] %in% c('NV', 'R'),
+#            'R',
+#            ifelse(agents$vax_status[NI_to_E] %in% c('V1', 'V2', 'B'),
+#                paste0('H_', agents$vax_status[NI_to_E], '_R'),
+#                'NA'
+#            )
+#        )
+#        agents$previous_immunity[NI_to_E] = immunity_0[NI_to_E]
+        #NOW
+#        agents = update_immunity(agents, NI_to_E, 'R',
+#                                 potential_times_E,
+#                                 complete_immunity_duration_R,
+#                                 net_protection, infection_protection)
 
         foi_contributions_ii = contacts * (infectiousness * initial_infecteds)
         force_of_infection_ii = colSums(foi_contributions_ii)
@@ -478,6 +511,8 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
                                  net_protection, infection_protection,
                                  complete_immunity_duration_R)
         agents = pil[['agents']]
+        new_self_isolations = pil[['new_self_isolations']]
+        cumulative_self_isolations = cumulative_self_isolations + new_self_isolations
         IP_to_IM = pil[['IP_to_IM']]
         IM_to_IS = pil[['IM_to_IS']]
         new_previously_unisolated_hospitalizations = pil[['new_previously_unisolated_hospitalizations']]
@@ -488,7 +523,7 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
         Out1 = update_Out1(Out1, k, agents, infection_status_0, isolated_0,
                            agent_presence, quantitative_presence,
                            NI_to_E_community, NI_to_E, doses, tests_performed, IP_to_IM, iii, ii_remaining,
-                           x_to_Isol, IM_to_IS, new_previously_unisolated_hospitalizations)
+                           x_to_Isol, IM_to_IS, new_previously_unisolated_hospitalizations, new_self_isolations, cumulative_self_isolations)
     
     }
     
@@ -542,6 +577,8 @@ make_Out1 = function(steps) {
         new_unavailables = rep(0, steps),
         doses = rep(0, steps),
         tests = rep(0, steps),
+        new_self_isolations = rep(0, steps),
+        cumulative_self_isolations = rep(0, steps),
         iii = rep(0, steps),
         ii_remaining = rep(0, steps)
     )
@@ -551,7 +588,8 @@ update_Out1 = function(Out1, k, agents, infection_status_0, isolated_0,
                        agent_presence, quantitative_presence,
                        NI_to_E_community, NI_to_E, doses, tests_performed,
                        IP_to_IM, iii, ii_remaining,
-                       x_to_Isol, IM_to_IS, new_previously_unisolated_hospitalizations) {
+                       x_to_Isol, IM_to_IS, new_previously_unisolated_hospitalizations,
+                       new_self_isolations, cumulative_self_isolations) {
     #NB: TRUE == 1 for the purpose of summation
     infection_status_1 = agents$infection_status
     immune_status_1 = agents$immune_status
@@ -616,6 +654,8 @@ update_Out1 = function(Out1, k, agents, infection_status_0, isolated_0,
         Out1$new_unavailables[k] = sum(x_to_Isol | new_previously_unisolated_hospitalizations)
         Out1$doses[k] = doses
         Out1$tests[k] = tests_performed
+        Out1$new_self_isolations[k] = new_self_isolations
+        Out1$cumulative_self_isolations[k] = cumulative_self_isolations
         Out1$iii[k] = iii
         Out1$ii_remaining[k] = ii_remaining
 

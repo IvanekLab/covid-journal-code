@@ -147,10 +147,11 @@ intervention_fragments = c(
 virus_tests = c(0, 0, 0.05, 0.3, 1.0, rep(0, 8))
 r0_reductions = c(rep(0, 7), 0.2, 0.4, 0.8, 0, 0, 0)
 
-get_filename = function(housing, setting, vaccinated, recovered, i) {
+get_filename = function(dormitory, community, setting, vaccinated, recovered, i) {
     unique_id = paste0(
-        setting, '-',
-        housing,
+        setting,
+        '-dormitory_', dormitory,
+        '-community_', community,
         '-vaccinated_', vaccinated,
         '-recovered_', recovered
     )
@@ -166,21 +167,28 @@ get_filename = function(housing, setting, vaccinated, recovered, i) {
     )
 
     filename = paste0(
-        'H_R_V2-check/stealing-issue-resolved-ABM-1000x',
+        '2024-flexible-housing/stealing-issue-resolved-ABM-1000x',
         unique_id,
-        ifelse(
-            vaccinated == TRUE & recovered == TRUE &
-            (
-                (setting == 'farm' & housing == 'shared') |
-                (setting == 'facility' & housing == 'individual')
-            ),
-            'baseline',
-            ''
-        ),
+        #accidentally failed to update conditions for this in iFoodDS-wrapper
+        #working around that for now
+        #ifelse(
+        #    vaccinated == TRUE & recovered == TRUE &
+        #    (
+        #        (setting == 'farm' & dormitory & !community) |
+        #        (setting == 'facility' & !dormitory & community)
+        #    ),
+        #    'baseline',
+            '',
+        #),
         '_',
-        ifelse(housing == 'individual',
-            paste0('community-0.002,', work_R0_fragment),
-            paste0('community-0,', work_R0_fragment, 'dormitory_R0-2,')
+        ifelse(community,
+            paste0('community-0.002,'),
+            paste0('community-0,')
+        ),
+        work_R0_fragment,
+        ifelse(dormitory,
+            'dormitory_R0-2,',
+            ''
         ),
         'E0-1,',
         intervention_fragments[i],
@@ -200,67 +208,69 @@ get_filename = function(housing, setting, vaccinated, recovered, i) {
 }
 
 df = NULL
-for(housing in c('shared', 'individual')) {
-    for(setting in 'facility') {
-        for(vaccinated in c(FALSE, TRUE)) {
-            for(recovered in c(FALSE, TRUE)) {
-                cat('\n', housing, setting, vaccinated, recovered, '\n\n')
-                intervention_expenses_function = generate_intervention_expenses_function()
-                intervention_expenses_function_2 = generate_intervention_expenses_function()
-                if(setting == 'farm') {
-                    output_per_shift = 247612.00 / 5
-                    hourly_wage = 13.89
-                    size = NA
-                } else {
-                    output_per_shift = 784346.67 / 10
-                    hourly_wage = 13.89
-                    size = 1000
-                }
-                farm_or_facility = setting
-                g = function(data) {
-                    ad_hoc_production_mask = rep(c(TRUE, TRUE, FALSE), days)
-                    fd = shiftwise_production_loss(data[ad_hoc_production_mask,,, drop = FALSE])
-                    fd = ifelse(is.na(fd), 0, fd)
-                    r = intervention_expenses_function(data)
-                    r[ad_hoc_production_mask] = r[ad_hoc_production_mask] + fd
-                    r
-                }
-
-                for(i in 1:13) {
-                    filename = get_filename(housing, setting, vaccinated, recovered, i)
-                    df_ = readRDS(filename)
-                    symptomatic_infections = apply(df_[,'new_symptomatic_infections',],2, sum)
-                    worker_shifts_unavailable = apply(df_[,'qn_absent',],2, sum)
-                    total_cost = apply(g(df_), 2, sum)
-                    intervention_expenses = apply(intervention_expenses_function_2(df_), 2, sum)
-                    ad_hoc_production_mask = rep(c(TRUE, TRUE, FALSE), days)
-                    fd = shiftwise_production_loss(df_[ad_hoc_production_mask,,, drop = FALSE])
-                    fd = ifelse(is.na(fd), 0, fd)
-                    production_loss = apply(fd, 2, sum)
-
-                    boosting = ifelse(i %in% c(11, 13),
-                        0.02,
-                        ifelse(i == 12,
-                            0.04,
-                            0
-                        )
-                    )
-                    temperature_screening = ifelse(i == 2, TRUE, FALSE)
-                    vax = ifelse(i %in% c(6, 13),
-                        0.02,
-                        ifelse(i == 7,
-                            0.04,
-                            0
-                        )
-                    )
-                    virus_test = virus_tests[i]
-                    r0_reduction = r0_reductions[i]
-                
-                    df__ = data.frame(housing = housing, setting = setting, vaccinated = ifelse(vaccinated, 'High', 'None'), recovered = ifelse(recovered, 'High', 'None'), symptomatic_infections = symptomatic_infections, boosting = boosting, temperature_screening = temperature_screening, vax = vax, virus_test = virus_test, r0_reduction = r0_reduction, worker_shifts_unavailable = worker_shifts_unavailable, total_cost = total_cost, intervention_expenses = intervention_expenses, production_loss = production_loss, run_number = 1:1000)
-                    if(is.null(df)) {
-                        df = df__
+for(dormitory in c(FALSE, TRUE)) {
+    for(community in c(FALSE, TRUE)) {
+        for(setting in c('facility')) {
+            for(vaccinated in c(FALSE, TRUE)) {
+                for(recovered in c(FALSE, TRUE)) {
+                    cat('\n', dormitory, community, setting, vaccinated, recovered, '\n\n')
+                    intervention_expenses_function = generate_intervention_expenses_function()
+                    intervention_expenses_function_2 = generate_intervention_expenses_function()
+                    if(setting == 'farm') {
+                        output_per_shift = 247612.00 / 5
+                        hourly_wage = 13.89
+                        size = NA
                     } else {
-                        df = rbind(df, df__)
+                        output_per_shift = 784346.67 / 10
+                        hourly_wage = 13.89
+                        size = 1000
+                    }
+                    farm_or_facility = setting
+                    g = function(data) {
+                        ad_hoc_production_mask = rep(c(TRUE, TRUE, FALSE), days)
+                        fd = shiftwise_production_loss(data[ad_hoc_production_mask,,, drop = FALSE])
+                        fd = ifelse(is.na(fd), 0, fd)
+                        r = intervention_expenses_function(data)
+                        r[ad_hoc_production_mask] = r[ad_hoc_production_mask] + fd
+                        r
+                    }
+    
+                    for(i in 1:13) {
+                        filename = get_filename(dormitory, community, setting, vaccinated, recovered, i)
+                        df_ = readRDS(filename)
+                        symptomatic_infections = apply(df_[,'new_symptomatic_infections',],2, sum)
+                        worker_shifts_unavailable = apply(df_[,'qn_absent',],2, sum)
+                        total_cost = apply(g(df_), 2, sum)
+                        intervention_expenses = apply(intervention_expenses_function_2(df_), 2, sum)
+                        ad_hoc_production_mask = rep(c(TRUE, TRUE, FALSE), days)
+                        fd = shiftwise_production_loss(df_[ad_hoc_production_mask,,, drop = FALSE])
+                        fd = ifelse(is.na(fd), 0, fd)
+                        production_loss = apply(fd, 2, sum)
+    
+                        boosting = ifelse(i %in% c(11, 13),
+                            0.02,
+                            ifelse(i == 12,
+                                0.04,
+                                0
+                            )
+                        )
+                        temperature_screening = ifelse(i == 2, TRUE, FALSE)
+                        vax = ifelse(i %in% c(6, 13),
+                            0.02,
+                            ifelse(i == 7,
+                                0.04,
+                                0
+                            )
+                        )
+                        virus_test = virus_tests[i]
+                        r0_reduction = r0_reductions[i]
+                    
+                        df__ = data.frame(dormitory = dormitory, community = community, setting = setting, vaccinated = vaccinated, recovered = recovered, symptomatic_infections = symptomatic_infections, boosting = boosting, temperature_screening = temperature_screening, vax = vax, virus_test = virus_test, r0_reduction = r0_reduction, worker_shifts_unavailable = worker_shifts_unavailable, total_cost = total_cost, intervention_expenses = intervention_expenses, production_loss = production_loss, run_number = 1:1000)
+                        if(is.null(df)) {
+                            df = df__
+                        } else {
+                            df = rbind(df, df__)
+                        }
                     }
                 }
             }
@@ -268,6 +278,8 @@ for(housing in c('shared', 'individual')) {
     }
 }
 
+df$community = factor(df$community)
+df$dormitory = factor(df$dormitory)
 df$boosting = factor(df$boosting)
 df$temperature_screening = factor(df$temperature_screening)
 df$vax = factor(df$vax)
@@ -283,40 +295,40 @@ df$run_number = factor(df$run_number)
 #cp, (b) if I do Poisson regression (without any cp)
 library('rpart.plot')
 
-tree = rpart(worker_shifts_unavailable ~ setting + housing + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
+tree = rpart(worker_shifts_unavailable ~ setting + dormitory + community + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
 for(i in 5) {
-    png(paste0('figures-2024-04-13/unavailable-', i, '.png'), height = 900, width = 1800)
+    png(paste0('figures-2024-04-29/unavailable-', i, '.png'), height = 900, width = 1800)
     rpart.plot(tree, extra = 1, type = i, main = '(B) Unavailable', cex = 2.4, cex.main = 4)
     dev.off()
 }
 
 
-tree = rpart(symptomatic_infections ~ setting + housing + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
+tree = rpart(symptomatic_infections ~ setting + dormitory + community + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
 for(i in 5) {
-    png(paste0('figures-2024-04-13/symptomatic-', i, '.png'), height = 900, width = 1800)
+    png(paste0('figures-2024-04-29/symptomatic-', i, '.png'), height = 900, width = 1800)
     rpart.plot(tree, extra = 1, type = i, main = '(A) Symptomatic Infections', cex = 2.4, cex.main = 4)
     dev.off()
 }
 
 #stop('Just testing the two complicated ones.')
 
-tree = rpart(total_cost ~ setting + housing + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
+tree = rpart(total_cost ~ setting + dormitory + community + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
 for(i in 5) {
-    png(paste0('figures-2024-04-13/total-cost-', i, '.png'), height = 900, width = 900)
+    png(paste0('figures-2024-04-29/total-cost-', i, '.png'), height = 900, width = 900)
     rpart.plot(tree, extra = 1, type = i, main = '(E) Total Cost', cex = 2.4, cex.main = 4) #updating this just for consistency
     dev.off()
 }
 
-tree = rpart(production_loss ~ setting + housing + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
+tree = rpart(production_loss ~ setting + dormitory + community + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
 for(i in 5) {
-    png(paste0('figures-2024-04-13/production-loss-', i, '.png'), height = 900, width = 900)
+    png(paste0('figures-2024-04-29/production-loss-', i, '.png'), height = 900, width = 900)
     rpart.plot(tree, extra = 1, type = i, main = '(D) Production Loss', cex = 2.4, cex.main = 4)
     dev.off()
 }
 
-tree = rpart(intervention_expenses ~ setting + housing + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
+tree = rpart(intervention_expenses ~ setting + dormitory + community + vaccinated + recovered + boosting + temperature_screening + vax + virus_test + r0_reduction, data = df[df[,'setting'] == 'facility',])
 for(i in 5) {
-    png(paste0('figures-2024-04-13/intervention-expenses-', i, '.png'), height = 900, width = 900)
+    png(paste0('figures-2024-04-29/intervention-expenses-', i, '.png'), height = 900, width = 900)
     rpart.plot(tree, extra = 1, type = i, main = '(C) Intervention Expenses', cex = 2.4, cex.main = 4)
     dev.off()
 }
@@ -327,11 +339,11 @@ library(grid)
 library(cowplot)
 
 filenames = c(
-    'figures-2024-04-13/intervention-expenses-5.png',
-    'figures-2024-04-13/production-loss-5.png'
+    'figures-2024-04-29/intervention-expenses-5.png',
+    'figures-2024-04-29/production-loss-5.png'
 )
 
-png('figures-2024-04-13/figure-5-ie-pl-2024-04-13.png', width = 1800, height = 900)
+png('figures-2024-04-29/figure-5-ie-pl-2024-04-13.png', width = 1800, height = 900)
 l = NULL
 for(i in 1:2) {
     filename = filenames[i]
@@ -350,12 +362,12 @@ dev.off()
 
 
 filenames = c(
-    'figures-2024-04-13/symptomatic-5.png',
-    'figures-2024-04-13/unavailable-5.png',
-    'figures-2024-04-13/figure-5-ie-pl-2024-04-13.png'
+    'figures-2024-04-29/symptomatic-5.png',
+    'figures-2024-04-29/unavailable-5.png',
+    'figures-2024-04-29/figure-5-ie-pl-2024-04-13.png'
 )
 
-png('figures-2024-04-13/figure-5-2024-04-13.png', width = 1800, height = 2700)
+png('figures-2024-04-29/figure-5-2024-04-13.png', width = 1800, height = 2700)
 l = NULL
 for(i in 1:3) {
     filename = filenames[i]

@@ -182,12 +182,10 @@ full_run = function(
     } else {
         stop('Invalid value for farm_or_facility: ', farm_or_facility)
     }
-    
-    if((tolower(employee_housing) == 'private') ||
-       (tolower(employee_housing) == 'individual')) {
-        housing_dormitory = FALSE
-        dormitory_R0 = 0 
-
+    housing_dormitory = NA # this shouldn't matter
+    if(is.null(community_transmission)) {
+        double_wrap_community_foi = 0
+    } else {
         if(tolower(community_transmission) == 'low') {
             double_wrap_community_foi = 1e-5#0.0005
         } else if(tolower(community_transmission) == 'intermediate'){
@@ -202,10 +200,11 @@ full_run = function(
         if(variant == 'delta' || variant == 'omicron') {
             double_wrap_community_foi = 2 * double_wrap_community_foi
         }
-    } else if(tolower(employee_housing) == 'shared') {
-        housing_dormitory = TRUE
-        double_wrap_community_foi = 0
+    }
 
+    if(is.null(social_distancing_shared_housing)) {
+        dormitory_R0 = 0
+    } else {
         if(tolower(social_distancing_shared_housing) == 'high') {
             dormitory_R0 = 0.5 
         } else if(tolower(social_distancing_shared_housing) == 'intermediate') {
@@ -220,9 +219,9 @@ full_run = function(
         if(variant == 'delta' || variant == 'omicron') {
             dormitory_R0 = 2 * dormitory_R0
         }
-    } else {
-        stop(paste('Invalid employee_housing:', employee_housing))
-    }
+    } #else {
+    #    stop(paste('Invalid employee_housing:', employee_housing))
+    #}
 
     if(tolower(social_distancing_work) == 'high') {           
         double_wrap_baseline_work_R0 = 2
@@ -258,7 +257,59 @@ full_run = function(
 
 FIXED_SEED = TRUE
 VERSION = '3.0'
-double_wrap_num_sims = 1000
+double_wrap_num_sims = 201
+
+full_run(
+         farm_or_facility = 'facility',
+         workers_per_crew = 30, # FM: workers per line
+         crews_per_supervisor = 30, # FM: / lines per shift
+         supervisors = 2, # FM: shifts
+         n_shift_floaters = 100, # FM only (if combined with farm model, will require NULL/NA)
+         n_cleaners = 300, # FM only (if combined with farm model, will require NULL/NA)
+         n_all_floaters = 100, # FM only (if combined with farm model, will require NULL/NA)
+         days = '90',
+         employee_housing = 'Private', 
+         social_distancing_shared_housing = NULL,
+         community_transmission = '0.009', #.0009,
+         social_distancing_work = 3.2 / 0.9132971, #taking account of fraction staying home
+                                                         #TBD: 7/5 accounts for
+         #work vs non-work days, and needs to be reincorporated into main model
+         #7/9 likewise
+         #and also for lambda
+         n_no_symptoms = 1, #i.e., exposed (TBD: not asymp/presymp -- should perhaps alter language?)
+         n_mild = '0',
+         fraction_recovered = 0, # TBD: Swiss Cheese it
+                                      # TBD: For now, do calculations here by hand
+         fraction_fully_vaccinated = 0,  #  TBD: (for now: and not boosted? (check))
+         ffv_last_five_months = 0,
+         fraction_boosted_ever = 0,
+         fraction_boosted_last_five_months = 0,
+         working_directory = '.', # TBD: Check if this is actually used
+         folder_name = '2024-validation',  # relative to working directory
+                                                    # TBD: check whether malicious naming can hack the server
+         unique_id = 'sixth-pass-pork-B-30-30',      # TBD: check whether malicious naming can hack the server
+         variant = '2020',
+
+         analyze_only = 'FALSE',
+         PARALLEL = TRUE,
+         protection_functions = protection_2020,
+         output_per_week = 784346.67,#doesn't matter
+        hourly_wage = 13.89,#doesn't matter
+        size = 1000,#doesn't matter
+        kConstants
+)
+
+ddd = readRDS('2024-validation/sixth-pass-pork-B-30-30_community-0.009,work_R0-3.50378863570245,E0-1,n_sims-201index_i-1_full-output.rds')
+ddd = ddd[,'cumulative_self_isolations',]
+ddd100 = apply(ddd, 2, function(v) which(v>=100)[1])
+ddd5 = apply(ddd, 2, function(v) which(v>=5)[1])
+ddd200 = apply(ddd, 2, function(v) which(v>=200)[1])
+print(summary((ddd100-ddd5)/3))
+print(quantile((ddd100-ddd5)/3,c(0.025,0.975)))
+print(summary((ddd200-ddd100)/3))
+print(quantile((ddd200-ddd100)/3,c(0.025,0.975)))
+
+stop('Pork Plant B validation done.')
 
 #separating into one variable per line for comments and diffing
 #here using all variable names explicitly, so that errors fail loudly instead of
@@ -276,7 +327,7 @@ common_parameters = list(
     n_no_symptoms = '1',                        #i.e., exposed 
     n_mild = '0',
     working_directory = '.',
-    folder_name = 'H_R_V2-check',   # relative to working directory
+    folder_name = '2024-flexible-housing',  # relative to working directory
     analyze_only = FALSE,
     PARALLEL = TRUE,
     #fraction_recovered = 0.69,
@@ -284,7 +335,8 @@ common_parameters = list(
     #ffv_last_five_months = 0.09,
     #fraction_boosted_ever = 0.45,
     #fraction_boosted_last_five_months = 0.45,
-    variant = 'omicron'
+    variant = 'omicron',
+    employee_housing = 'flexible-handling' #to confirm this works now
 )
 
 additional_facility_parameters = list(
@@ -333,19 +385,26 @@ for(housing in c('shared', 'individual')) {
         }
     }
 }
-
-for(i in (1:8)) {
-    print(paste0('Starting: ', i))
-    housing = df[i, 'housing']
+ooo = c(8+4+2+1, 8+0+2+1, 0+4+2+1, 0+0+2+1) + 1
+v = c(ooo, (1:16)[-ooo])
+for(i in v) {
+#for(i in 1:16) { #actually split this as 1:8 at home, 9-16 at work, c(8, 16, 7, 15, 6, 14, 6, 13) on the server
+    dormitory = df[i, 'dormitory']
+    community = df[i, 'community']
     setting = df[i, 'setting']
     vaccinated = df[i, 'vaccinated']
     recovered = df[i, 'recovered']
-    if(housing == 'shared') {
+    if(dormitory) {
         social_distancing_shared_housing = 'Intermediate'
-        community_transmission = NULL
+        #community_transmission = NULL
     } else {
         social_distancing_shared_housing = NULL
+    }
+    if(community) {
         community_transmission = 'Intermediate'
+    } else {
+        #social_distancing_shared_housing = NULL
+        community_transmission = NULL
     }
     if(setting == 'farm') {
         setting_parameters = additional_farm_parameters
@@ -373,20 +432,22 @@ for(i in (1:8)) {
         common_parameters,
         setting_parameters,
         list(
-            unique_id = paste0('stealing-issue-resolved-ABM-1000x', setting, '-', housing, '-vaccinated_', vaccinated, '-recovered_', recovered),
+            unique_id = paste0('stealing-issue-resolved-ABM-1000x', setting, '-dormitory_', dormitory, '-community_', community, '-vaccinated_', vaccinated, '-recovered_', recovered),
             kConstants = kConstants,
             fraction_recovered = fraction_recovered,
             fraction_fully_vaccinated = fraction_fully_vaccinated,
             ffv_last_five_months = ffv_last_five_months,
             fraction_boosted_ever = fraction_boosted_ever,
             fraction_boosted_last_five_months = fraction_boosted_last_five_months,
-            employee_housing = housing, 
+            #employee_housing = housing, 
             social_distancing_shared_housing = social_distancing_shared_housing,
             community_transmission = community_transmission
         )
     )
     do.call(full_run, all_params)
+    cat('\n\n\n######\n', which(i == v), ' DONE!\n######\n\n\n') #To allow me to know when to merge streams
 }
+
 
 stop('Scenario now, not sensitivity.')
 

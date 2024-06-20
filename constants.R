@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 kConstants = list( #using Google-style notation for now
-    isolation_duration = 5, #days
+    isolation_duration = 14, #5, #days
     mu = 5.2, #for log-linear duration_{E+IP}
     sd = .1, #||
     duration_IP_mean = 1.058 * 2.174,
