@@ -259,7 +259,7 @@ progress_infection = function(agents, N, start_time, end_time, symptom_protectio
     #    agents$time_IM[IP_to_IM & isolated_0] #resetting isolation duration upon
                                               #symptom onset
     agents$infection_status[xE_to_IP] = 'IP'
-    self_isolating = IP_to_IM & rbinom(N, 1, .25)
+    self_isolating = IP_to_IM & FALSE #rbinom(N, 1, .25)
     new_self_isolations = sum(self_isolating)
     agents$isolated[self_isolating] = TRUE
     agents$time_isolated[self_isolating] = end_time

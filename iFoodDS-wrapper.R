@@ -257,21 +257,21 @@ full_run = function(
 
 FIXED_SEED = TRUE
 VERSION = '3.0'
-double_wrap_num_sims = 201
+double_wrap_num_sims = 1001
 
 full_run(
          farm_or_facility = 'facility',
-         workers_per_crew = 30, # FM: workers per line
-         crews_per_supervisor = 30, # FM: / lines per shift
+         workers_per_crew = 36, # FM: workers per line
+         crews_per_supervisor = 10, # FM: / lines per shift
          supervisors = 2, # FM: shifts
-         n_shift_floaters = 100, # FM only (if combined with farm model, will require NULL/NA)
-         n_cleaners = 300, # FM only (if combined with farm model, will require NULL/NA)
-         n_all_floaters = 100, # FM only (if combined with farm model, will require NULL/NA)
+         n_shift_floaters = 34, # FM only (if combined with farm model, will require NULL/NA)
+         n_cleaners = 34, # FM only (if combined with farm model, will require NULL/NA)
+         n_all_floaters = 34, # FM only (if combined with farm model, will require NULL/NA)
          days = '90',
          employee_housing = 'Private', 
          social_distancing_shared_housing = NULL,
-         community_transmission = '0.009', #.0009,
-         social_distancing_work = 3.2 / 0.9132971, #taking account of fraction staying home
+         community_transmission = '0.001', #.0009,
+         social_distancing_work = 3,
                                                          #TBD: 7/5 accounts for
          #work vs non-work days, and needs to be reincorporated into main model
          #7/9 likewise
@@ -287,7 +287,7 @@ full_run(
          working_directory = '.', # TBD: Check if this is actually used
          folder_name = '2024-validation',  # relative to working directory
                                                     # TBD: check whether malicious naming can hack the server
-         unique_id = 'sixth-pass-pork-B-30-30',      # TBD: check whether malicious naming can hack the server
+         unique_id = 'fruit',      # TBD: check whether malicious naming can hack the server
          variant = '2020',
 
          analyze_only = 'FALSE',
@@ -299,17 +299,13 @@ full_run(
         kConstants
 )
 
-ddd = readRDS('2024-validation/sixth-pass-pork-B-30-30_community-0.009,work_R0-3.50378863570245,E0-1,n_sims-201index_i-1_full-output.rds')
-ddd = ddd[,'cumulative_self_isolations',]
-ddd100 = apply(ddd, 2, function(v) which(v>=100)[1])
-ddd5 = apply(ddd, 2, function(v) which(v>=5)[1])
-ddd200 = apply(ddd, 2, function(v) which(v>=200)[1])
-print(summary((ddd100-ddd5)/3))
-print(quantile((ddd100-ddd5)/3,c(0.025,0.975)))
-print(summary((ddd200-ddd100)/3))
-print(quantile((ddd200-ddd100)/3,c(0.025,0.975)))
-
-stop('Pork Plant B validation done.')
+data = readRDS('2024-validation/fruit_community-0.001,work_R0-3,E0-1,n_sims-1001index_i-1_full-output.rds')
+infected = function(data) {
+    data[,'IA',] + data[,'IP',] + data[,'IM',] + data[,'IS',] + data[,'IC',]
+}
+i = infected(data)
+print(quantile(i[3*44,], c(.01,.025,.25,.5,.75,.975,.99)))
+stop('Fruit validation done?')
 
 #separating into one variable per line for comments and diffing
 #here using all variable names explicitly, so that errors fail loudly instead of
