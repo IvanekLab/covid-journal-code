@@ -259,15 +259,16 @@ FIXED_SEED = TRUE
 VERSION = '3.0'
 double_wrap_num_sims = 1001
 
+tryCatch({ #crude solution to keep inability to plot from suppressing the text output we want
 full_run(
          farm_or_facility = 'facility',
-         workers_per_crew = 36, # FM: workers per line
-         crews_per_supervisor = 10, # FM: / lines per shift
+         workers_per_crew = 18, # FM: workers per line
+         crews_per_supervisor = 6, # FM: / lines per shift
          supervisors = 2, # FM: shifts
-         n_shift_floaters = 34, # FM only (if combined with farm model, will require NULL/NA)
-         n_cleaners = 34, # FM only (if combined with farm model, will require NULL/NA)
-         n_all_floaters = 34, # FM only (if combined with farm model, will require NULL/NA)
-         days = '90',
+         n_shift_floaters = 18, # FM only (if combined with farm model, will require NULL/NA)
+         n_cleaners = 18, # FM only (if combined with farm model, will require NULL/NA)
+         n_all_floaters = 18, # FM only (if combined with farm model, will require NULL/NA)
+         days = '180',
          employee_housing = 'Private', 
          social_distancing_shared_housing = NULL,
          community_transmission = '0.001', #.0009,
@@ -287,7 +288,7 @@ full_run(
          working_directory = '.', # TBD: Check if this is actually used
          folder_name = '2024-validation',  # relative to working directory
                                                     # TBD: check whether malicious naming can hack the server
-         unique_id = 'fruit',      # TBD: check whether malicious naming can hack the server
+         unique_id = 'dairy',      # TBD: check whether malicious naming can hack the server
          variant = '2020',
 
          analyze_only = 'FALSE',
@@ -298,14 +299,19 @@ full_run(
         size = 1000,#doesn't matter
         kConstants
 )
-
-data = readRDS('2024-validation/fruit_community-0.001,work_R0-3,E0-1,n_sims-1001index_i-1_full-output.rds')
+},
+error = function(e) {}
+)
+data = readRDS('2024-validation/dairy_community-0.001,work_R0-3,E0-1,n_sims-1001index_i-1_full-output.rds')
 infected = function(data) {
     data[,'IA',] + data[,'IP',] + data[,'IM',] + data[,'IS',] + data[,'IC',]
 }
 i = infected(data)
-print(quantile(i[3*44,], c(.01,.025,.25,.5,.75,.975,.99)))
-stop('Fruit validation done?')
+i3 = (i[(1:180)*3-2,] + i[(1:180)*3-1,] + i[(1:180)*3,]) / 3
+i21 = (i3[(1:174)+0,] + i3[(1:174)+1,] + i3[(1:174)+2,] + i3[(1:174)+3,] + i3[(1:174)+4,] + i3[(1:174)+5,] + i3[(1:174)+6,]) / 7
+m = apply(i21, 2, function(v) min(ifelse(v >= 80, 1:174, Inf)))
+print(quantile(m, c(.01, .025, .05, .1, .25, .5, .75, .9, .95, .975, .99)))
+stop('Dairy validation done?')
 
 #separating into one variable per line for comments and diffing
 #here using all variable names explicitly, so that errors fail loudly instead of
