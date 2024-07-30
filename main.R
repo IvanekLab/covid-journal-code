@@ -360,16 +360,19 @@ for (i in 1:num_sims) {
     )
     agents = model$agents
     output = model$Out1
+    fourteens = model$fourteens
 
     if(i == 1) {
         full_output = array(0, c(steps, dim(as.matrix(output))[2], num_sims))
         #doing this this way guarantees it gets created with the right number of
         #return variables
         start_days = numeric(num_sims)
+        fourteenss = list()
     }
     full_output[,,i] = as.matrix(output) #this works; for whatever reason,
                                          #as.array does not
     start_days[i] = start_day
+    fourteenss[[i]] = fourteens
 } # for (i in 1:num_sims)
 #print_rand_state(paste('intervention:', index_i, 'printing state'))
 
@@ -388,4 +391,6 @@ fragments = unlist(strsplit(full_output_save_name, '/'))
 start_days_save_name = paste0(fragments[1], '/start_days--', fragments[2])
 #cat('\n\nstart_days_save_name:', start_days_save_name, '\n\n')
 saveRDS(start_days, start_days_save_name)
+fourteens_save_name = paste0(fragments[1], '/fourteens--', fragments[2])
+saveRDS(fourteenss, fourteens_save_name)
 } #main_produce_farm_fn 

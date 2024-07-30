@@ -341,6 +341,30 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
                 kConstants) {
     #saveRDS(agents, 'agents1.rds')
     N <-nrow(agents)
+    ROLLING = list(
+        IM2 = FALSE,
+        IM6 = FALSE,
+        IS2 = FALSE,
+        IS6 = FALSE
+    )
+    k_ref = list(
+        IM2 = NA,
+        IM6 = NA,
+        IS2 = NA,
+        IS6 = NA
+    )
+    fourteen_steps = list(
+        IM2 = rep(FALSE, N),
+        IM6 = rep(FALSE, N),
+        IS2 = rep(FALSE, N),
+        IS6 = rep(FALSE, N)
+    )
+    fourteen_days = list(
+        IM2 = rep(FALSE, N),
+        IM6 = rep(FALSE, N),
+        IS2 = rep(FALSE, N),
+        IS6 = rep(FALSE, N)
+    )
 
     Out1 = make_Out1(steps)
     
@@ -404,7 +428,7 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
 
         #2022-02-10: pulling out repeated calls that are intended to resolve on
         #the status of agent properties at the *start* of a step
-        #Many of these ideally should be adjusted over the course of a step,
+        #Many of these ideally should be adjusted over the course of a step,, 'IS', 
         #e.g., people infected during a step should ideally affect the
         #probability of subsequent infections. But in the current state of the
         #model, this is impractical. But pulling things out this way not only
@@ -525,14 +549,49 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
                            NI_to_E_community, NI_to_E, doses, tests_performed, IP_to_IM, iii, ii_remaining,
                            x_to_Isol, IM_to_IS, new_previously_unisolated_hospitalizations, new_self_isolations, cumulative_self_isolations)
     
+        for(test_stem in c('IM', 'IS')) {
+            for(test_n in c(2, 6)) {
+                test_index = paste0(test_stem, test_n)
+                if(ROLLING[[test_index]]) {
+                    #infected = as.character(1:N)[agents$state == 'IA' | agents$state == 'IP' | agents$state == 'IM']
+                    #infected_list_ever[infected] = TRUE #value doesn't actually matter, we just need to get something there
+                    if(k - k_ref[[test_index]] <= 3 * 14) {
+                        test_infected = agents$infection_status %in% c('IA', 'IP', 'IM', 'IS', 'IC')
+                        fourteen_days[[test_index]][test_infected] = TRUE
+                        if(k - k_ref[[test_index]] <= 14) {
+                            fourteen_steps[[test_index]][test_infected] = TRUE
+                        }
+
+                    }
+                } else if(Out1[k, test_stem] >= test_n) {
+                    test_infected = agents$infection_status %in% c('IA', 'IP', 'IM', 'IS', 'IC')
+                    ROLLING[[test_index]] = TRUE
+                    k_ref[[test_index]] = k
+                    fourteen_days[[test_index]][test_infected] = TRUE
+                    fourteen_steps[[test_index]][test_infected] = TRUE
+                }
+            }
+        }
     }
     
+    fourteens = list()
+    for(test_stem in c('IM', 'IS')) {
+        for(test_n in c(2, 6)) {
+            test_index = paste0(test_stem, test_n)
+            if(ROLLING[[test_index]]) {
+                fourteens[[test_index]] = c(sum(fourteen_steps[[test_index]]), sum(fourteen_days[[test_index]]))
+            } else {
+                fourteens[[test_index]] = NA
+            }
+        }
+     }
+
     #"Out1" records the sum of individuals in each state at time k
     #(i.e., during time from time=0 to time=nTime1)
     #this allows ploting trajectories for each state in one simulation.
     #"agents" shows demographic characteristics of all individuals in the
     #population and their infection status at time nTime1    
-    Out <- list("Out1" = Out1, "agents" = agents)
+    Out <- list("Out1" = Out1, "agents" = agents, fourteens = fourteens)
     
     Out #return a list of objects
 }
@@ -542,7 +601,7 @@ make_Out1 = function(steps) {
     data.frame(
         S = rep(0, steps),
         E = rep(0, steps),
-        IA = rep(0, steps),
+        IA = rep(fourteen_steps = 0, steps),
         IP = rep(0, steps),
         IM = rep(0, steps),
         IS = rep(0, steps),
