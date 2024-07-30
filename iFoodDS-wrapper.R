@@ -257,21 +257,21 @@ full_run = function(
 
 FIXED_SEED = TRUE
 VERSION = '3.0'
-double_wrap_num_sims = 401
+double_wrap_num_sims = 100
 
 tryCatch({ #crude solution to keep inability to plot from suppressing the text output we want
 full_run(
          farm_or_facility = 'farm',
-         workers_per_crew = 5, # FM: workers per line
+         workers_per_crew = 10, # FM: workers per line
          crews_per_supervisor = 3, # FM: / lines per shift
-         supervisors = 4, # FM: shifts
+         supervisors = 10, # FM: shifts
          n_shift_floaters = NA, # FM only (if combined with farm model, will require NULL/NA)
          n_cleaners = NA, # FM only (if combined with farm model, will require NULL/NA)
          n_all_floaters = NA, # FM only (if combined with farm model, will require NULL/NA)
          days = '180',
          employee_housing = 'Shared', 
          social_distancing_shared_housing = 2,
-         community_transmission = NULL, #'0.001', #.0009,
+         community_transmission = 1e-5, #'0.001', #.0009,
          social_distancing_work = 4,
                                                          #TBD: 7/5 accounts for
          #work vs non-work days, and needs to be reincorporated into main model
@@ -288,7 +288,7 @@ full_run(
          working_directory = '.', # TBD: Check if this is actually used
          folder_name = '2024-validation',  # relative to working directory
                                                     # TBD: check whether malicious naming can hack the server
-         unique_id = 'farm-shared',      # TBD: check whether malicious naming can hack the server
+         unique_id = 'farm-mixed',      # TBD: check whether malicious naming can hack the server
          variant = '2020',
 
          analyze_only = 'FALSE',
@@ -302,10 +302,13 @@ full_run(
 },
 error = function(e) {}
 )
-fourteens = readRDS('2024-validation/fourteens--farm-shared_community-0,work_R0-4,dormitory_R0-2,E0-1,n_sims-401index_i-1_full-output.rds')
-IS2 = sapply(fourteens, function(x) x[['IS2']][2])
-print(sum(!is.na(IS2))/401)
-print(summary(IS2[!is.na(IS2)]))
+sevens = readRDS('2024-validation/sevens--farm-mixed_community-1e-05,work_R0-4,dormitory_R0-2,E0-1,n_sims-100index_i-1_full-output.rds')
+#IS2 = sapply(sevens, function(x) x[['IS2']][2])
+#print(sum(!is.na(IS2))/100)
+#print(summary(IS2[!is.na(IS2)]))
+IM2 = sapply(sevens, function(x) x[['IM2']][2])
+print(sum(!is.na(IM2))/100)
+print(summary(IM2[!is.na(IM2)]))
 stop('Mixed farm validation done?')
 
 #separating into one variable per line for comments and diffing

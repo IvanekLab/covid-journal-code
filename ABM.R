@@ -366,6 +366,18 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
         IS6 = rep(FALSE, N)
     )
 
+    seven_steps = list(
+        IM2 = rep(FALSE, N),
+        IM6 = rep(FALSE, N),
+        IS2 = rep(FALSE, N),
+        IS6 = rep(FALSE, N)
+    )
+    seven_days = list(
+        IM2 = rep(FALSE, N),
+        IM6 = rep(FALSE, N),
+        IS2 = rep(FALSE, N),
+        IS6 = rep(FALSE, N)
+    )
     Out1 = make_Out1(steps)
     
     # Dump parameters to local variables -- centralized for easier tweaking
@@ -558,8 +570,14 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
                     if(k - k_ref[[test_index]] <= 3 * 14) {
                         test_infected = agents$infection_status %in% c('IA', 'IP', 'IM', 'IS', 'IC')
                         fourteen_days[[test_index]][test_infected] = TRUE
-                        if(k - k_ref[[test_index]] <= 14) {
-                            fourteen_steps[[test_index]][test_infected] = TRUE
+                        if(k - k_ref[[test_index]] <= 3 * 7) {
+                            seven_days[[test_index]][test_infected] = TRUE
+                            if(k - k_ref[[test_index]] <= 14) {
+                                fourteen_steps[[test_index]][test_infected] = TRUE
+                                if(k - k_ref[[test_index]] <= 7) {
+                                    seven_steps[[test_index]][test_infected] = TRUE
+                                }
+                            }
                         }
 
                     }
@@ -569,19 +587,24 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
                     k_ref[[test_index]] = k
                     fourteen_days[[test_index]][test_infected] = TRUE
                     fourteen_steps[[test_index]][test_infected] = TRUE
+                    seven_days[[test_index]][test_infected] = TRUE
+                    seven_steps[[test_index]][test_infected] = TRUE
                 }
             }
         }
     }
     
     fourteens = list()
+    sevens = list()
     for(test_stem in c('IM', 'IS')) {
         for(test_n in c(2, 6)) {
             test_index = paste0(test_stem, test_n)
             if(ROLLING[[test_index]]) {
                 fourteens[[test_index]] = c(sum(fourteen_steps[[test_index]]), sum(fourteen_days[[test_index]]))
+                sevens[[test_index]] = c(sum(seven_steps[[test_index]]), sum(seven_days[[test_index]]))
             } else {
                 fourteens[[test_index]] = NA
+                sevens[[test_index]] = NA
             }
         }
      }
@@ -591,7 +614,7 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
     #this allows ploting trajectories for each state in one simulation.
     #"agents" shows demographic characteristics of all individuals in the
     #population and their infection status at time nTime1    
-    Out <- list("Out1" = Out1, "agents" = agents, fourteens = fourteens)
+    Out <- list("Out1" = Out1, "agents" = agents, fourteens = fourteens, sevens = sevens)
     
     Out #return a list of objects
 }
