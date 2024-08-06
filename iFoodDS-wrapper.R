@@ -257,7 +257,7 @@ full_run = function(
 
 FIXED_SEED = TRUE
 VERSION = '3.0'
-double_wrap_num_sims = 100
+double_wrap_num_sims = 101
 
 tryCatch({ #crude solution to keep inability to plot from suppressing the text output we want
 full_run(
