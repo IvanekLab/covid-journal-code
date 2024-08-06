@@ -262,16 +262,16 @@ double_wrap_num_sims = 100
 tryCatch({ #crude solution to keep inability to plot from suppressing the text output we want
 full_run(
          farm_or_facility = 'farm',
-         workers_per_crew = 10, # FM: workers per line
-         crews_per_supervisor = 3, # FM: / lines per shift
-         supervisors = 10, # FM: shifts
+         workers_per_crew = 13, # FM: workers per line
+         crews_per_supervisor = 8, # FM: / lines per shift
+         supervisors = 3, # FM: shifts
          n_shift_floaters = NA, # FM only (if combined with farm model, will require NULL/NA)
          n_cleaners = NA, # FM only (if combined with farm model, will require NULL/NA)
          n_all_floaters = NA, # FM only (if combined with farm model, will require NULL/NA)
          days = '180',
          employee_housing = 'Shared', 
-         social_distancing_shared_housing = 2,
-         community_transmission = 1e-5, #'0.001', #.0009,
+         social_distancing_shared_housing = 1,
+         community_transmission = '0.001', 
          social_distancing_work = 4,
                                                          #TBD: 7/5 accounts for
          #work vs non-work days, and needs to be reincorporated into main model
@@ -302,7 +302,7 @@ full_run(
 },
 error = function(e) {}
 )
-sevens = readRDS('2024-validation/sevens--farm-mixed_community-1e-05,work_R0-4,dormitory_R0-2,E0-1,n_sims-100index_i-1_full-output.rds')
+sevens = readRDS('2024-validation/sevens--farm-mixed_community-0.001,work_R0-4,dormitory_R0-1,E0-1,n_sims-100index_i-1_full-output.rds')
 #IS2 = sapply(sevens, function(x) x[['IS2']][2])
 #print(sum(!is.na(IS2))/100)
 #print(summary(IS2[!is.na(IS2)]))
