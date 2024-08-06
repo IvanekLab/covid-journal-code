@@ -270,13 +270,13 @@ double_wrap_num_sims = 1000
 #git diff --no-index --word-diff --ignore-all-space a.txt b.txt
 common_parameters = list(
     workers_per_crew = '10',                    # FM: workers per line
-    crews_per_supervisor = 3,                   # FM: / lines per shift
+    crews_per_supervisor = 30,                   # FM: / lines per shift
     days = '90',
     social_distancing_work = 'Intermediate',
     n_no_symptoms = '1',                        #i.e., exposed 
     n_mild = '0',
     working_directory = '.',
-    folder_name = 'H_R_V2-check',   # relative to working directory
+    folder_name = 'H_R_V2-check--big',   # relative to working directory
     analyze_only = FALSE,
     PARALLEL = TRUE,
     #fraction_recovered = 0.69,
@@ -290,16 +290,15 @@ common_parameters = list(
 additional_facility_parameters = list(
     farm_or_facility = 'facility',
     supervisors = '2',          # FM: shifts
-    n_shift_floaters = '10',     # FM only (for farm model, will require NULL/NA)
-    n_cleaners = '10',          # FM only (for farm model, will require NULL/NA)
-    n_all_floaters = '11',      # FM only (for farm model, will require NULL/NA)
+    n_shift_floaters = '100',     # FM only (for farm model, will require NULL/NA)
+    n_cleaners = '100',          # FM only (for farm model, will require NULL/NA)
+    n_all_floaters = '101',      # FM only (for farm model, will require NULL/NA)
     #employee_housing = 'Private', 
     #social_distancing_shared_housing = NULL,
     #community_transmission = 'Intermediate',
-    #unique_id = 'facility',
-    output_per_week = 784346.67,
+    output_per_week = 7843466.70,
     hourly_wage = 13.89,
-    size = 1000
+    size = 10000
 
 )
 
@@ -373,7 +372,7 @@ for(i in (1:8)) {
         common_parameters,
         setting_parameters,
         list(
-            unique_id = paste0('stealing-issue-resolved-ABM-1000x', setting, '-', housing, '-vaccinated_', vaccinated, '-recovered_', recovered),
+            unique_id = paste0('stealing-issue-resolved-ABM-1000x--big', setting, '-', housing, '-vaccinated_', vaccinated, '-recovered_', recovered),
             kConstants = kConstants,
             fraction_recovered = fraction_recovered,
             fraction_fully_vaccinated = fraction_fully_vaccinated,

@@ -23,19 +23,19 @@ library(cowplot)
 
 dir.create('figures-after-additional-fixes/')
 filenames = c(
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic-incidence_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic-Fraction-Non-Zero_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic-incidence_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Symptomatic-Fraction-Non-Zero_3.0.png',
 
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Symptomatic-Infections-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Symptomatic-Infections-violin_3.0.png',
 
 
 
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-differences-Total-Symptomatic-Infections-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-percent-differences-Total-Symptomatic-Infections-violin--cut-and-trimmed_3.0.png'
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-differences-Total-Symptomatic-Infections-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-percent-differences-Total-Symptomatic-Infections-violin--cut-and-trimmed_3.0.png'
 )
 
-png('figures-after-additional-fixes/figure-2-rearranged-stealing-issue-resolved-ABM-1000x--cut-and-trimmed.png', width = 2000, height = 3000)
+png('figures-after-additional-fixes/figure-2-rearranged-stealing-issue-resolved-ABM-1000x--big--cut-and-trimmed.png', width = 2000, height = 3000)
 l = NULL
 for(filename in filenames) {
     this_image = readPNG(filename)
@@ -55,18 +55,18 @@ dev.off()
 #stop('Got the first plot!')
 
 filenames = c(
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Unavailable-production_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Unavailable-production-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Unavailable-production-Fraction-Non-Zero_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Unavailable-production_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Unavailable-production-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Unavailable-production-Fraction-Non-Zero_3.0.png',
 
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_zero-pairwise-differences-Total-Unavailable-production-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-differences-Total-Unavailable-production-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-percent-differences-Total-Unavailable-production-violin_3.0.png'
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_zero-pairwise-differences-Total-Unavailable-production-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-differences-Total-Unavailable-production-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_non-zero-pairwise-percent-differences-Total-Unavailable-production-violin_3.0.png'
 )
 
 
 
-png('figures-after-additional-fixes/figure-3-rearranged-stealing-issue-resolved-ABM-1000x.png', width = 2000, height = 3000)
+png('figures-after-additional-fixes/figure-3-rearranged-stealing-issue-resolved-ABM-1000x--big.png', width = 2000, height = 3000)
 l = NULL
 for(filename in filenames) {
     if(is.na(filename)) {
@@ -87,13 +87,13 @@ print(plot_grid(plotlist = l, nrow = 3, byrow = FALSE))
 dev.off()
 
 filenames = c(
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Intervention-Expenses-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Production-Loss-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Cost-violin_3.0.png',
-    'H_R_V2-check/stealing-issue-resolved-ABM-1000xfacility-shared-vaccinated_TRUE-recovered_TRUE_v4b-Fraction-Short-production-violin_3.0.png'
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Intervention-Expenses-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Production-Loss-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_Total-Cost-violin_3.0.png',
+    'H_R_V2-check--big/stealing-issue-resolved-ABM-1000x--bigfacility-shared-vaccinated_TRUE-recovered_TRUE_v4b-Fraction-Short-production-violin_3.0.png'
 )
 
-png('figures-after-additional-fixes/figure-4-rearranged-stealing-issue-resolved-ABM-1000x.png', width = 2000, height = 2000)
+png('figures-after-additional-fixes/figure-4-rearranged-stealing-issue-resolved-ABM-1000x--big.png', width = 2000, height = 2000)
 l = NULL
 for(filename in filenames) {
     this_image = readPNG(filename)

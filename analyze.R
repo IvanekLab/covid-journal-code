@@ -802,7 +802,11 @@ end_boxplot('Total-Unavailable-production-violin', shiftwise_unavailable, xlab =
 
 end_boxplot('Total-Symptomatic-Infections', new_symptomatic_infections, xlab = paste('Total symptomatic infections'), average = FALSE, main_title = '')
 end_boxplot('Total-Symptomatic-Infections-violin', new_symptomatic_infections, xlab = paste('Total symptomatic infections'), average = FALSE, main_title = '(D) Cumulative Incidence, Distribution', function_ = vioplot)
-end_boxplot('v4b-Fraction-Short-production-violin', shiftwise_short, xlab = 'Percentage of production shifts with a shortage (> 15% of workers absent)', average = TRUE, xlim = c(0,1), percent = TRUE, main_title = '(D) Fraction of Production Shifts Short', mask_fn = production_shifts_mask_fn, function_ = vioplot)
+#end_boxplot('Total-Symptomatic-Infections-prevalence-violin', symptomatic, xlab = paste('Total Worker-Days Symptomatically Infected'), average = FALSE, ys_combiner = day_average_all, main_title = '(F) Cumulative Prevalence, distribution', function_ = vioplot)
+#end_boxplot('pairwise-differences-Total-Symptomatic-Infections-violin', new_symptomatic_infections, xlab = paste('Total Symptomatic Infections (among', N, 'total workers)'), average = FALSE, main_title = '(C) P. Differences, all runs', function_ = vioplot, pairwise_differences = TRUE)
+#browser()
+#end_boxplot('Fraction-Short-production', shiftwise_short, xlab = 'Percentage of Production Shifts Short (> 15% of workers absent)', average = TRUE, xlim = c(0,1), percent = TRUE, main_title = main_title, mask = production_shifts)
+end_boxplot('v4b-Fraction-Short-production-violin', shiftwise_short, xlab = 'Percentage of production shifts with a shortage (> 15% of workers absent)', average = TRUE, xlim = c(0,0.2), percent = TRUE, main_title = '(D) Fraction of Production Shifts Short', mask_fn = production_shifts_mask_fn, function_ = vioplot)
 
 "oneplot('v4b-Production-Loss', shiftwise_production_loss, mean, c(0,0), 'Production Loss (Dollars ($) per production shift)', mask = production_shifts)
 end_boxplot('v4b-Total-Production-Loss', shiftwise_production_loss, xlab = 'Total Production Loss in Dollars ($)', mask = production_shifts)"
