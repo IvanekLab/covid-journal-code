@@ -182,12 +182,10 @@ full_run = function(
     } else {
         stop('Invalid value for farm_or_facility: ', farm_or_facility)
     }
-    
-    if((tolower(employee_housing) == 'private') ||
-       (tolower(employee_housing) == 'individual')) {
-        housing_dormitory = FALSE
-        dormitory_R0 = 0 
-
+    housing_dormitory = NA # this shouldn't matter
+    if(is.null(community_transmission)) {
+        double_wrap_community_foi = 0
+    } else {
         if(tolower(community_transmission) == 'low') {
             double_wrap_community_foi = 1e-5#0.0005
         } else if(tolower(community_transmission) == 'intermediate'){
@@ -202,10 +200,11 @@ full_run = function(
         if(variant == 'delta' || variant == 'omicron') {
             double_wrap_community_foi = 2 * double_wrap_community_foi
         }
-    } else if(tolower(employee_housing) == 'shared') {
-        housing_dormitory = TRUE
-        double_wrap_community_foi = 0
+    }
 
+    if(is.null(social_distancing_shared_housing)) {
+        dormitory_R0 = 0
+    } else {
         if(tolower(social_distancing_shared_housing) == 'high') {
             dormitory_R0 = 0.5 
         } else if(tolower(social_distancing_shared_housing) == 'intermediate') {
@@ -220,9 +219,9 @@ full_run = function(
         if(variant == 'delta' || variant == 'omicron') {
             dormitory_R0 = 2 * dormitory_R0
         }
-    } else {
-        stop(paste('Invalid employee_housing:', employee_housing))
-    }
+    } #else {
+    #    stop(paste('Invalid employee_housing:', employee_housing))
+    #}
 
     if(tolower(social_distancing_work) == 'high') {           
         double_wrap_baseline_work_R0 = 2
@@ -276,7 +275,7 @@ common_parameters = list(
     n_no_symptoms = '1',                        #i.e., exposed 
     n_mild = '0',
     working_directory = '.',
-    folder_name = 'H_R_V2-check',   # relative to working directory
+    folder_name = '2024-flexible-housing',  # relative to working directory
     analyze_only = FALSE,
     PARALLEL = TRUE,
     #fraction_recovered = 0.69,
@@ -284,7 +283,8 @@ common_parameters = list(
     #ffv_last_five_months = 0.09,
     #fraction_boosted_ever = 0.45,
     #fraction_boosted_last_five_months = 0.45,
-    variant = 'omicron'
+    variant = 'omicron',
+    employee_housing = 'flexible-handling' #to confirm this works now
 )
 
 additional_facility_parameters = list(
@@ -320,32 +320,38 @@ additional_farm_parameters = list(
 
 
 df = NULL
-for(housing in c('shared', 'individual')) {
-    for(setting in 'facility') {#c('farm', 'facility')) {
-        for(vaccinated in c(FALSE, TRUE)) {
-            for(recovered in c(FALSE, TRUE)) {
-                if(is.null(df)) {
-                    df = data.frame(housing = housing, setting = setting, vaccinated = vaccinated, recovered = recovered)
-                } else {
-                    df = rbind(df, data.frame(housing = housing, setting = setting, vaccinated = vaccinated, recovered = recovered))
+for(dormitory in c(FALSE, TRUE)) {
+    for(community in c(FALSE, TRUE)) {
+        for(setting in c('facility')) {
+            for(vaccinated in c(FALSE, TRUE)) {
+                for(recovered in c(FALSE, TRUE)) {
+                    if(is.null(df)) {
+                        df = data.frame(dormitory = dormitory, community = community, setting = setting, vaccinated = vaccinated, recovered = recovered)
+                    } else {
+                        df = rbind(df, data.frame(dormitory = dormitory, community = community, setting = setting, vaccinated = vaccinated, recovered = recovered))
+                    }
                 }
             }
         }
     }
 }
-
-for(i in (1:8)) {
-    print(paste0('Starting: ', i))
-    housing = df[i, 'housing']
+for(i in 1:16) {
+    dormitory = df[i, 'dormitory']
+    community = df[i, 'community']
     setting = df[i, 'setting']
     vaccinated = df[i, 'vaccinated']
     recovered = df[i, 'recovered']
-    if(housing == 'shared') {
+    if(dormitory) {
         social_distancing_shared_housing = 'Intermediate'
-        community_transmission = NULL
+        #community_transmission = NULL
     } else {
         social_distancing_shared_housing = NULL
+    }
+    if(community) {
         community_transmission = 'Intermediate'
+    } else {
+        #social_distancing_shared_housing = NULL
+        community_transmission = NULL
     }
     if(setting == 'farm') {
         setting_parameters = additional_farm_parameters
@@ -373,20 +379,22 @@ for(i in (1:8)) {
         common_parameters,
         setting_parameters,
         list(
-            unique_id = paste0('stealing-issue-resolved-ABM-1000x', setting, '-', housing, '-vaccinated_', vaccinated, '-recovered_', recovered),
+            unique_id = paste0('stealing-issue-resolved-ABM-1000x', setting, '-dormitory_', dormitory, '-community_', community, '-vaccinated_', vaccinated, '-recovered_', recovered),
             kConstants = kConstants,
             fraction_recovered = fraction_recovered,
             fraction_fully_vaccinated = fraction_fully_vaccinated,
             ffv_last_five_months = ffv_last_five_months,
             fraction_boosted_ever = fraction_boosted_ever,
             fraction_boosted_last_five_months = fraction_boosted_last_five_months,
-            employee_housing = housing, 
+            #employee_housing = housing, 
             social_distancing_shared_housing = social_distancing_shared_housing,
             community_transmission = community_transmission
         )
     )
     do.call(full_run, all_params)
+    cat('\n\n\n######\n', i, ' DONE!\n######\n\n\n') 
 }
+
 
 stop('Scenario now, not sensitivity.')
 

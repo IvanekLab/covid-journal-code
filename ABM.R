@@ -448,8 +448,21 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
             !isolated_0 
         )
         agents$infection_status[NI_to_E_community] = 'E'
-        agents$time_E[NI_to_E_community] = potential_times_E[NI_to_E_community]        
-
+        agents$time_E[NI_to_E_community] = potential_times_E[NI_to_E_community]
+        #WAS, in previous r_eff tests:
+#        agents$immune_status[NI_to_E_community] = ifelse(agents$vax_status[NI_to_E_community] %in% c('NV', 'R'),
+#            'R',
+#            ifelse(agents$vax_status[NI_to_E_community] %in% c('V1', 'V2', 'B'),
+#                paste0('H_', agents$vax_status[NI_to_E_community], '_R'),
+#                'NA'
+#            )
+#        )
+#        agents$previous_immunity[NI_to_E_community] = immunity_0[NI_to_E_community]
+        #NOW
+#        agents = update_immunity(agents, NI_to_E_community, 'R',
+#                                 potential_times_E,
+#                                 complete_immunity_duration_R,
+#                                 net_protection, infection_protection)
 
         NI_to_E = (
             agents$infection_status == 'NI' &
@@ -458,6 +471,20 @@ ABM <- function(agents, contacts_list, lambda_list, schedule,
         )
         agents$infection_status[NI_to_E] = 'E'
         agents$time_E[NI_to_E] = potential_times_E[NI_to_E]
+        #WAS
+#        agents$immune_status[NI_to_E] = ifelse(agents$vax_status[NI_to_E] %in% c('NV', 'R'),
+#            'R',
+#            ifelse(agents$vax_status[NI_to_E] %in% c('V1', 'V2', 'B'),
+#                paste0('H_', agents$vax_status[NI_to_E], '_R'),
+#                'NA'
+#            )
+#        )
+#        agents$previous_immunity[NI_to_E] = immunity_0[NI_to_E]
+        #NOW
+#        agents = update_immunity(agents, NI_to_E, 'R',
+#                                 potential_times_E,
+#                                 complete_immunity_duration_R,
+#                                 net_protection, infection_protection)
 
         foi_contributions_ii = contacts * (infectiousness * initial_infecteds)
         force_of_infection_ii = colSums(foi_contributions_ii)
