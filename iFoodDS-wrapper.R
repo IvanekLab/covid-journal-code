@@ -306,7 +306,7 @@ fourteens = readRDS('2024-validation/fourteens--farm-shared_community-0,work_R0-
 IS2 = sapply(fourteens, function(x) x[['IS2']][2])
 print(sum(!is.na(IS2))/401)
 print(summary(IS2[!is.na(IS2)]))
-stop('Mixed farm validation done?')
+stop('Shared farm validation done?')
 
 #separating into one variable per line for comments and diffing
 #here using all variable names explicitly, so that errors fail loudly instead of
