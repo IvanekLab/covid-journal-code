@@ -259,6 +259,7 @@ FIXED_SEED = TRUE
 VERSION = '3.0'
 double_wrap_num_sims = 1001
 
+tryCatch({ #crude solution to keep inability to plot from suppressing the text output we want
 full_run(
          farm_or_facility = 'facility',
          workers_per_crew = 36, # FM: workers per line
@@ -297,6 +298,8 @@ full_run(
         hourly_wage = 13.89,#doesn't matter
         size = 1000,#doesn't matter
         kConstants
+)},
+error = function(e) {}
 )
 
 data = readRDS('2024-validation/fruit_community-0.001,work_R0-3,E0-1,n_sims-1001index_i-1_full-output.rds')
