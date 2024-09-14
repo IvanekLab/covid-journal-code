@@ -249,7 +249,6 @@ row.names<-c(
     'Vax + Boosting, p = 0.02/day'
 )[limited_runs_index]
 
-
 rds_filename = function(
     prepended_key, index_i, index_j,
     max_j,
@@ -349,7 +348,9 @@ make_batch = function(d, key, index_j,
                                 dormitory_R0s, E0, initial_recovereds,
                                 initial_V2s, n_sims)
         #print('Deconfirm')
+#tryCatch({
         data_ = readRDS(filename)
+#}, finally = print(filename))
         key_ = paste0(i, key)
         d[[key_]] = list()
         #print(summary_names)
@@ -442,7 +443,7 @@ make_dd = function(
 
 make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                              sensitivity_multipliers, max_j,
-                             csv_filename, unique_ids) {#, selection_mode) {  ######
+                             csv_filename, unique_ids, kludge_ylim = NULL) {#, selection_mode) {  ######
     #print(outcome_name)
     filename; outcome_name; ylab; dd; kConstants; sensitivity_multipliers; max_j#; selection_mode
     png(filename, height = 200*5, width = 200*7)
@@ -604,7 +605,12 @@ make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                 #print(log(values))
                 #print('off')
                 if(i == 1) {
-                    if(null_value == 0) {
+                    this_ylim = c(greatest_negative_difference, greatest_positive_difference)
+                    if(!(is.null(kludge_ylim))) {
+                        log_differences = values
+                        this_ylim = kludge_ylim
+                    }
+                    else if(null_value == 0) {
                         log_differences = sign(values) * 10 * (greatest_positive_difference - greatest_negative_difference)
                     } else {
                         log_differences = log(values) - log(null_value)
@@ -613,7 +619,7 @@ make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                         real_multipliers,
                         #log(values) - log(null_value),
                         log_differences,
-                        ylim = c(greatest_negative_difference, greatest_positive_difference),
+                        ylim = this_ylim,
                         xlim = c(0.5, 1.5),
                         xlab = paste0(sensitivity_variable, ' (multiplier)'),
                         ylab = ylab,
@@ -621,9 +627,14 @@ make_paneled_plot = function(filename, outcome_name, ylab, dd, kConstants,
                         lwd = 4
                     )
                 } else {
+                    if(!(is.null(kludge_ylim))) {
+                        to_plot = values
+                    } else {
+                        to_plot = log(values) - log(null_value)
+                    }
                     points(
                         real_multipliers,
-                        log(values) - log(null_value),
+                        to_plot,
                         type = 'b',
                         col = colors[i],
                         lwd = 4
@@ -659,7 +670,8 @@ panelwise_interesting_sensitivity_fn = function(
     masks,
     output_per_shifts,
     hourly_wages,
-    eConstants
+    eConstants,
+    kludge = FALSE
 ) {
     folder_name; unique_ids; is_baselines; community_transmissions; work_R0s; dormitory_R0s; E0; initial_recovereds; initial_V2s; n_sims; dd = NULL; summary_names; summary_fns; masks; output_per_shifts; hourly_wages; eConstants
     max_j = length(unique_ids)
@@ -674,31 +686,60 @@ panelwise_interesting_sensitivity_fn = function(
                      output_per_shifts, hourly_wages, eConstants)
     }
     #dd <<- dd
-    l_si = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-si.png',
-                             'symptomatic_infections',
-                             'Symptomatic infections (multiplier)', dd,
-                             kConstants, sensitivity_multipliers, max_j,
-                             'figures-2024-04-16/shared-sensitivity-symptomatic-infections.csv', ######
-                             unique_ids) ######
-    l_su = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-su.png',
-                             'shifts_unavailable', 
-                             'Shifts unavailable (multiplier)', dd,
-                             kConstants, sensitivity_multipliers, max_j,
-                             'figures-2024-04-16/shared-sensitivity-shifts-unavailable.csv', ######
-                             unique_ids) ######
-#    l_tc = make_one_parameter_paneled_plots('v16-summary-sensitivity-plots-tc.png',
-#                             'total_cost',
-#                             'Total cost (multiplier)', dd,
-#                             kConstants, sensitivity_multipliers, max_j,
-#                             'v16-sensitivity-total-cost.csv', ######
-#                             unique_ids) ######
-    l_tc = make_paneled_plot('figures-2024-04-16/summary-sensitivity-plots-tc.png',
-                             'total_cost',
-                             'Total cost (multiplier)', dd,
-                             kConstants, sensitivity_multipliers, max_j,
-                            'figures-2024-04-16/sensitivity-total-cost.csv', ######
-                             unique_ids) ######
-
+    if(kludge) {
+        l_si = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-si-kludged.png',
+                                 'symptomatic_infections',
+                                 'Symptomatic infections (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-symptomatic-infections.csv', ######
+                                 unique_ids,
+                                kludge_ylim = c(0,30)) ######
+        l_su = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-su-kludged.png',
+                                 'shifts_unavailable', 
+                                 'Shifts unavailable (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-shifts-unavailable.csv', ######
+                                 unique_ids,
+                                kludge_ylim = c(0,60)) ######
+    #    l_tc = make_one_parameter_paneled_plots('v16-summary-sensitivity-plots-tc.png',
+    #                             'total_cost',
+    #                             'Total cost (multiplier)', dd,
+    #                             kConstants, sensitivity_multipliers, max_j,
+    #                             'v16-sensitivity-total-cost.csv', ######
+    #                             unique_ids) ######
+        l_tc = make_paneled_plot('figures-2024-09-05/summary-sensitivity-plots-tc-kludged.png',
+                                 'total_cost',
+                                 'Total cost (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                'figures-2024-09-05/sensitivity-total-cost.csv', ######
+                                 unique_ids,
+                                kludge_ylim = c(0,40000)) ######
+    } else {
+        l_si = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-si.png',
+                                 'symptomatic_infections',
+                                 'Symptomatic infections (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-symptomatic-infections.csv', ######
+                                 unique_ids) ######
+        l_su = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-su.png',
+                                 'shifts_unavailable', 
+                                 'Shifts unavailable (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-shifts-unavailable.csv', ######
+                                 unique_ids) ######
+    #    l_tc = make_one_parameter_paneled_plots('v16-summary-sensitivity-plots-tc.png',
+    #                             'total_cost',
+    #                             'Total cost (multiplier)', dd,
+    #                             kConstants, sensitivity_multipliers, max_j,
+    #                             'v16-sensitivity-total-cost.csv', ######
+    #                             unique_ids) ######
+        l_tc = make_paneled_plot('figures-2024-09-05/summary-sensitivity-plots-tc.png',
+                                 'total_cost',
+                                 'Total cost (multiplier)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                'figures-2024-09-05/sensitivity-total-cost.csv', ######
+                                 unique_ids) ######
+    }
 
     #list(gd_tc = l_tc$gd, gdim_tc = l_tc$gdim, dd = dd)
     #list(gd_si = l_si$gd, gd_su = l_su$gd, gd_tc = l_tc$gd, gdim_si = l_si$gdim, gdim_su = l_su$gdim, gdim_tc = l_tc$gdim, dd = dd)
@@ -722,7 +763,8 @@ panelwise_r_eff_sensitivity_fn = function(
     masks,
     output_per_shifts,
     hourly_wages,
-    eConstants
+    eConstants,
+    kludge = FALSE
 ) {
     folder_name; unique_ids; is_baselines; community_transmissions; work_R0s; dormitory_R0s; E0; initial_recovereds; initial_V2s; n_sims; dd = NULL; summary_names; summary_fns; masks; output_per_shifts; hourly_wages; eConstants
     max_j = length(unique_ids)
@@ -737,13 +779,22 @@ panelwise_r_eff_sensitivity_fn = function(
                      output_per_shifts, hourly_wages, eConstants)
     }
     #dd <<- dd
-    l_r_eff = make_paneled_plot('figures-2024-04-16/shared-summary-sensitivity-plots-r_eff--90-days.png',
-                             'r_eff',
-                             'Effective reproduction number (internal)', dd,
-                             kConstants, sensitivity_multipliers, max_j,
-                             'figures-2024-04-16/shared-sensitivity-r_eff--90-days.csv', ######
-                             unique_ids) ######
-
+    if(kludge) {
+        l_r_eff = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-r_eff-kludged.png',
+                                 'r_eff',
+                                 'Effective reproduction number (internal)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-r_eff.csv', ######
+                                 unique_ids,
+                                kludge_ylim = c(0,4)) ######
+    } else {
+        l_r_eff = make_paneled_plot('figures-2024-09-05/shared-summary-sensitivity-plots-r_eff.png',
+                                 'r_eff',
+                                 'Effective reproduction number (internal)', dd,
+                                 kConstants, sensitivity_multipliers, max_j,
+                                 'figures-2024-09-05/shared-sensitivity-r_eff.csv', ######
+                                 unique_ids) ######
+    }
     #list(gd_tc = l_tc$gd, gdim_tc = l_tc$gdim, dd = dd)
     #list(gd_si = l_si$gd, gd_su = l_su$gd, gd_tc = l_tc$gd, gdim_si = l_si$gdim, gdim_su = l_su$gdim, gdim_tc = l_tc$gdim, dd = dd)
     #list(gd_si = l_si$gd, gd_su = l_su$gd, gdim_si = l_si$gdim, gdim_su = l_su$gdim, dd = dd)
@@ -1093,7 +1144,7 @@ pi_economic_sensitivity_fn = function(
     }
     #dd <<- dd
     #return here
-    l_tc = make_paneled_economic_plot('figures-2024-04-16/summary-sensitivity-plots-economic-tc.png',
+    l_tc = make_paneled_economic_plot('figures-2024-09-05/summary-sensitivity-plots-economic-tc.png',
                              'total_cost',
                              'Total cost (multiplier)', dd,
                              eConstants, sensitivity_multipliers, max_j,
@@ -1157,7 +1208,7 @@ hourly_wages = rep(16.57, 4)
 #output_per_shifts = rep(1680000 / 10, 16)
 #hourly_wages = rep(13.89, 16)
 #eConstants
-
+dir.create('figures-2024-09-05/')
 l = panelwise_interesting_sensitivity_fn(
     'H_R_V2-check--sensitivity',
     c('farmlike-facility'#,
@@ -1185,7 +1236,8 @@ l = panelwise_interesting_sensitivity_fn(
       mean_fn(shiftwise_unavailable),
       mean_fn(g)),
     masks,
-    output_per_shifts, hourly_wages, eConstants
+    output_per_shifts, hourly_wages, eConstants,
+    kludge = TRUE
 )
 #v = pmax(l$gd_si, l$gd_su, l$gd_tc)
 #print(sort(v))
@@ -1193,9 +1245,7 @@ l = panelwise_interesting_sensitivity_fn(
 #print(names(kConstants)[v >= cutoff])
 
 dd = l$dd
-dir.create('figures-2024-04-16/')
-saveRDS(dd, 'figures-2024-04-16/saved_dd.RDS')
-
+saveRDS(dd, 'figures-2024-09-05/saved_dd.RDS')
 
 discordant = which(
     names(dd[[1]])[6:485] != c(
@@ -1417,7 +1467,8 @@ l_r_eff = panelwise_r_eff_sensitivity_fn(
     c('r_eff'),
     c(mean_fn(r_eff)),
     masks,
-    output_per_shifts, hourly_wages, eConstants
+    output_per_shifts, hourly_wages, eConstants,
+    kludge = TRUE
 )
 #v = pmax(l$gd_si, l$gd_su, l$gd_tc)
 #print(sort(v))
@@ -1425,7 +1476,7 @@ l_r_eff = panelwise_r_eff_sensitivity_fn(
 #print(names(kConstants)[v >= cutoff])
 
 dd_l = l_r_eff$dd
-saveRDS(dd_l, 'figures-2024-04-16/saved_dd-r_eff--90-days.RDS')
+saveRDS(dd_l, 'figures-2024-09-05/saved_dd-r_eff.RDS')
 
 "cat(sapply(1:5, function(i) paste0(dd_l[[1]][[i]][['r_eff']], '\t', dd_l[[1]][[generate_name(i, 'V2_decay_rate', 0.5)]][['r_eff']], '\t', dd_l[[1]][[generate_name(i, 'V2_decay_rate', 1.5)]][['r_eff']])), sep='\n')
 #2.75    1.88    2.59
@@ -1562,7 +1613,7 @@ custom_linear_panel = function(outcome_name, ylab, dd, kConstants,
     }
 }
 
-png('figures-2024-04-16/master-summary--90-days.png', height = 200*5, width = 200*4)
+png('figures-2024-09-05/master-summary.png', height = 200*5, width = 200*4)
 #layout(matrix(1:45, ncol = 5, byrow = TRUE))
 #layout(matrix(1:44, ncol = 4, byrow = TRUE))
 layout(matrix(1:20, ncol = 4, byrow = TRUE))
