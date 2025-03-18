@@ -58,10 +58,10 @@ Efforts have been made to keep comments and other documentation up to date,
 but it is possible that some comments may be out of date, in accordance with
 the principle that documentation is *always* out of date.
 
-Suggested citation: “C. Henry, D. Tang, E. Bulut, S.I. Murphy, C. Zoellner, A.
-Adalja, D. Wetherington, M. Wiedmann, S. Alcaine, R. Ivanek. Infection control
-strategies in essential industries: using COVID-19 in the food industry to model
-economic and public health trade-offs. (Under review)”
+Suggested citation: “C. Henry, E. Bulut, S.I. Murphy, C. Zoellner, A.
+Adalja, D. Wetherington, M. Wiedmann, S. Alcaine, R. Ivanek. An agent-based model 
+of COVID-19 in the food industry for assessing public health and economic impacts 
+of infection control strategies. (Under review)”
 
 Usage:
 To generate Figures 1.B.iii, 2, 3, 4, 5, and S1, from branch 'main':
