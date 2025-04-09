@@ -61,7 +61,7 @@ the principle that documentation is *always* out of date.
 Suggested citation: “C. Henry, E. Bulut, S.I. Murphy, C. Zoellner, A.
 Adalja, D. Wetherington, M. Wiedmann, S. Alcaine, R. Ivanek. An agent-based model 
 of COVID-19 in the food industry for assessing public health and economic impacts 
-of infection control strategies. (Under review)”
+of infection control strategies. Scientific Reports (in press)”
 
 Usage:
 To generate Figures 1.B.iii, 2, 3, 4, 5, and S1, from branch 'main':
