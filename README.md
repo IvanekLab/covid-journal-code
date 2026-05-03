@@ -58,10 +58,7 @@ Efforts have been made to keep comments and other documentation up to date,
 but it is possible that some comments may be out of date, in accordance with
 the principle that documentation is *always* out of date.
 
-Suggested citation: “C. Henry, E. Bulut, S.I. Murphy, C. Zoellner, A.
-Adalja, D. Wetherington, M. Wiedmann, S. Alcaine, R. Ivanek. An agent-based model 
-of COVID-19 in the food industry for assessing public health and economic impacts 
-of infection control strategies. Scientific Reports (in press)”
+Suggested citation: “Henry, C., E. Bulut, S.I. Murphy, C. Zoellner, A. Adalja, D. Wetherington, M. Wiedmann, S. Alcaine, R. Ivanek. An agent-based model of COVID- 19 in the food industry for assessing public health and economic impacts of infection control strategies. Scientific Reports 15, 14153 (2025) https://www.nature.com/articles/s41598-025-97076-2  ”
 
 Usage:
 To generate Figures 1.B.iii, 2, 3, 4, 5, and S1, from branch 'main':
